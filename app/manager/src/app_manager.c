@@ -10,34 +10,28 @@
 
 void app_init()
 {
-//  FreeRTOS_THREAD_T lcdTaskHandle;
-//
-//  lcdTaskHandle.pfnThread = (pdTASK_CODE) LCD_OctahedronWorker;
-//  lcdTaskHandle.pvArg = NULL;
-//
-//  BaseType_t xReturned = xTaskCreate(lcdTaskHandle.pfnThread, /* Function that implements the task. */
-//                                    "LCD Task", /* Text name for the task. */
-//                                    configMINIMAL_STACK_SIZE * 2, /* Stack size in words, not bytes. */
-//                                    (void*) &lcdTaskHandle, /* Parameter passed into the task. */
-//                                    (tskIDLE_PRIORITY) + 1, /* Priority at which the task is created. */
-//                                    &lcdTaskHandle.hThread /* Used to pass out the created task's handle. */
-//                                    );
+  /* TODO: issue !!*/
+  AppQueues_t appQueues;
+  appQueues.lcdQueue = xQueueCreate(LCD_QUEUE_LEN, sizeof(LcdTaskScreen_t));
+  appQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(LedTaskCommand_t));
 
+  FreeRTOS_THREAD_T taskConfigs[] = {
+    { (pdTASK_CODE)NetxDemoWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)&appQueues, (tskIDLE_PRIORITY) + 2, NULL },
+    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 2, (void*)&appQueues.lcdQueue, (tskIDLE_PRIORITY) + 1, NULL },
+    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)&appQueues.ledQueue, (tskIDLE_PRIORITY) + 0, NULL },
+  };
 
-  FreeRTOS_THREAD_T netx90TaskHandle;
-
-  netx90TaskHandle.pfnThread = (pdTASK_CODE) NetxDemoWorker;
-  netx90TaskHandle.pvArg = NULL;
-
-  BaseType_t xReturned = xTaskCreate(netx90TaskHandle.pfnThread, /* Function that implements the task. */
-                          "netx90 Task", /* Text name for the task. */
-                          configMINIMAL_STACK_SIZE * 16, /* Stack size in words, not bytes. */
-                          (void*) &netx90TaskHandle, /* Parameter passed into the task. */
-                          (tskIDLE_PRIORITY) + 2, /* Priority at which the task is created. */
-                          &netx90TaskHandle.hThread /* Used to pass out the created task's handle. */
-                          );
-
-  configASSERT(pdPASS == xReturned);
+  BaseType_t xReturned = pdPASS;
+  for (int i = 0; i < sizeof(taskConfigs) / sizeof(taskConfigs[0]); ++i)
+  {
+      xReturned = xTaskCreate( taskConfigs[i].pfnThread,
+                               taskConfigs[i].pcName,
+                               taskConfigs[i].usStackDepth,
+                               taskConfigs[i].pvArg,
+                               taskConfigs[i].uxPriority,
+                               &taskConfigs[i].hThread);
+      configASSERT(pdPASS == xReturned);
+  }
 }
 
 void app_run()

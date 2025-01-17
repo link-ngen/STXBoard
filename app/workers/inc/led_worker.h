@@ -19,6 +19,8 @@ typedef enum {
   LED_STATUS_UNKNOWN
 } LedTaskCommand_t;
 
+#define LED_QUEUE_LEN 2
+
 void LED_Worker(void* pvParameters);
 
 #endif /* WORKERS_INC_LED_WORKER_H_ */

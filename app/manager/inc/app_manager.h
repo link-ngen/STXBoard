@@ -10,14 +10,23 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+
+typedef struct AppQueues_tag
+{
+  QueueHandle_t lcdQueue;
+  QueueHandle_t ledQueue;
+} AppQueues_t;
 
 typedef struct FreeRTOS_THREAD_Ttag FreeRTOS_THREAD_T;
 struct FreeRTOS_THREAD_Ttag
 {
-  TaskHandle_t        hThread;    // Handle to the task object.
   TaskFunction_t      pfnThread;  // Pointer to the thread function.
-  void*               pvArg;      // Pointer to the thread function argument.
-  FreeRTOS_THREAD_T*  nextThread;
+  const char          *pcName;
+  uint16_t            usStackDepth;
+  void                *pvArg;      // Pointer to the thread function argument.
+  UBaseType_t         uxPriority;
+  TaskHandle_t        hThread;    // Handle to the task object.
 };
 
 void app_init();

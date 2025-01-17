@@ -51,13 +51,7 @@ typedef struct NetxFsmRessource_tag
   NetxStateFunction_t currentState;
   NetxStateFunction_t lastState;
 
-  /* Queue handle to signal leds  */
-  xQueueHandle xLedQueueHandle;
-  LedTaskCommand_t tLedCmd;
-
-  /* Queue handle to signal lcd  */
-  xQueueHandle xLcdQueueHandle;
-  LedTaskCommand_t tLcdCmd;
+  AppQueues_t *tAppQueues;
 
 } NetxFsmRessource_t;
 

@@ -11,8 +11,6 @@
 #include "netx_worker.h"
 #include "SerialDPMInterface.h"
 
-#define LED_QUEUE_LEN 2
-
 static NetxFsmRessource_t tNetxFSM = { 0 };
 
 static void State_NetxInit(NetxFsmRessource_t *ptNetxRsc);
@@ -25,6 +23,7 @@ static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutI
   bool fCookieAvailable = false;
   char szCookie[5] = { 0 };
   uint32_t starttime, difftime = 0;
+  LedTaskCommand_t tLedCmd = LED_STATUS_UNKNOWN;
 
   starttime = OS_GetMilliSecCounter();
 
@@ -43,16 +42,16 @@ static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutI
        will result in the device being handled as flash based.
        Currently there is no way to detect this */
       fCookieAvailable = true;
-      ptNetxRsc->tLedCmd = LED_STATUS_ERROR_OFF;
+      tLedCmd = LED_STATUS_ERROR_OFF;
     }
     else
     {
       fCookieAvailable = false;
       difftime = OS_GetMilliSecCounter() - starttime;
 
-      ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
+      tLedCmd = LED_STATUS_ERROR_ON;
     }
-    xQueueSend(ptNetxRsc->xLedQueueHandle, &ptNetxRsc->tLedCmd, 10);
+    xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
   }
 
   if(false == fCookieAvailable)
@@ -128,32 +127,35 @@ void State_NetxInit(NetxFsmRessource_t *ptNetxRsc)
 {
   int32_t lRet = InitializeToolkit(ptNetxRsc);
 
+  LedTaskCommand_t tLedCmd = LED_STATUS_UNKNOWN;
+  LcdTaskScreen_t tLcdCmd = LCD_COMMAND_UNKNOWN;
+
   if (CIFX_NO_ERROR == lRet)
   {
     ptNetxRsc->currentState = State_NetxPreOP;
-    ptNetxRsc->tLedCmd = LED_STATUS_RUN_ON;
-    ptNetxRsc->tLcdCmd = LCD_COMMAND_BOOT_SCREEN;
+    tLedCmd = LED_STATUS_RUN_ON;
+    tLcdCmd = LCD_COMMAND_BOOT_SCREEN;
   }
   else
   {
     ptNetxRsc->currentState = State_NetxError;
-    ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
-    ptNetxRsc->tLcdCmd = LCD_COMMAND_IDLE_SCREEN;
+    tLedCmd = LED_STATUS_ERROR_ON;
+    tLcdCmd = LCD_COMMAND_IDLE_SCREEN;
   }
   ptNetxRsc->lastState = State_NetxInit;
 
-  xQueueSend(ptNetxRsc->xLedQueueHandle, &ptNetxRsc->tLedCmd, 10);
-  xQueueSend(ptNetxRsc->xLcdQueueHandle, &ptNetxRsc->tLcdCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdCmd, 10);
 }
 
 void State_NetxPreOP(NetxFsmRessource_t *ptNetxRsc)
 {
   ptNetxRsc->fNetXDrvRunning = true;
-  ptNetxRsc->tLedCmd = LED_STATUS_CONFIG_BLINK;
-  ptNetxRsc->tLcdCmd = LCD_COMMAND_IOXCHANGE_SCREEN;
+  LedTaskCommand_t tLedCmd = LED_STATUS_CONFIG_BLINK;
+  LcdTaskScreen_t tLcdCmd = LCD_COMMAND_IOXCHANGE_SCREEN;
 
-  xQueueSend(ptNetxRsc->xLedQueueHandle, &ptNetxRsc->tLedCmd, 10);
-  xQueueSend(ptNetxRsc->xLcdQueueHandle, &ptNetxRsc->tLcdCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdCmd, 10);
 
   /* TODO: Real Time Ethernet configuration */
   vTaskDelay(500);
@@ -162,8 +164,8 @@ void State_NetxPreOP(NetxFsmRessource_t *ptNetxRsc)
 
 void State_NetxOP(NetxFsmRessource_t *ptNetxRsc)
 {
-  ptNetxRsc->tLedCmd = LED_STATUS_RUN_ON;
-  xQueueSend(ptNetxRsc->xLedQueueHandle, &ptNetxRsc->tLedCmd, 10);
+  LedTaskCommand_t tLedCmd = LED_STATUS_RUN_ON;
+  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
 
   /* TODO: implement cyclic data transfer */
   ptNetxRsc->lastState = State_NetxOP;
@@ -197,47 +199,9 @@ static void fsm_run(NetxFsmRessource_t *ptNetxRsc)
 
 void NetxDemoWorker(void *pvParameters)
 {
-  FreeRTOS_THREAD_T *pThread = (FreeRTOS_THREAD_T *)pvParameters;
-  FreeRTOS_THREAD_T ledTaskHandle = { 0 };
-
-  BaseType_t xReturned = pdPASS;
-  QueueHandle_t xLedCmdQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(LedTaskCommand_t));
-
-  ledTaskHandle.pfnThread = (pdTASK_CODE)LED_Worker;
-  ledTaskHandle.pvArg = (void *) xLedCmdQueue;
-
-  xReturned = xTaskCreate(ledTaskHandle.pfnThread,
-                          "Conf Led Task",
-                          configMINIMAL_STACK_SIZE,
-                          (void *) ledTaskHandle.pvArg,
-                          (tskIDLE_PRIORITY) + 0,
-                          &ledTaskHandle.hThread);
-
-  configASSERT(pdPASS == xReturned);
-  pThread->nextThread = &ledTaskHandle;
-  pThread = pThread->nextThread;
-
-  FreeRTOS_THREAD_T lcdTaskHandle = { 0 };
-  lcdTaskHandle.pfnThread = (pdTASK_CODE) LCD_Worker;
-  QueueHandle_t xLcdCmdQueue = xQueueCreate(LCD_QUEUE_LEN, sizeof(LcdTaskScreen_t));
-  lcdTaskHandle.pvArg = (void *)xLcdCmdQueue;
-
-  xReturned = xTaskCreate(lcdTaskHandle.pfnThread, /* Function that implements the task. */
-                          "LCD Task", /* Text name for the task. */
-                          configMINIMAL_STACK_SIZE * 2, /* Stack size in words, not bytes. */
-                          (void*) &lcdTaskHandle, /* Parameter passed into the task. */
-                          (tskIDLE_PRIORITY) + 1, /* Priority at which the task is created. */
-                          &lcdTaskHandle.hThread /* Used to pass out the created task's handle. */
-                          );
-
-  configASSERT(pdPASS == xReturned);
-  pThread->nextThread = &lcdTaskHandle;
-
   tNetxFSM.currentState = State_NetxInit;
   tNetxFSM.lastState = NULL;
-
-  tNetxFSM.xLedQueueHandle = xLedCmdQueue;
-  tNetxFSM.xLcdQueueHandle = xLcdCmdQueue;
+  tNetxFSM.tAppQueues = (AppQueues_t *)pvParameters;
 
   while (1)
   {
