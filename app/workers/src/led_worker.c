@@ -7,33 +7,62 @@
 
 
 #include "led_worker.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+
+typedef void (*LedCommandHandler_t)(void);
+
+static void Led_HandleConfigBlink(void)
+{
+  Led_ToggleConfigRun();
+  Led_DisableError();
+  vTaskDelay(500);
+}
+
+static void Led_HandleRunOn(void)
+{
+  Led_EnableConfigRun();
+  Led_DisableError();
+}
+
+static void Led_HandleConfigError(void)
+{
+  Led_EnableConfigError();
+  Led_DisableError();
+}
+
+static void Led_HandleErrorOff(void)
+{
+  Led_DisableError();
+}
+
+static void Led_HandleErrorOn(void)
+{
+  Led_EnableConfigError();
+  Led_EnableError();
+}
+
 
 void LED_Worker(void* pvParameters)
 {
-  LedRessource_t tLedRsc = { 0 };
-  tLedRsc.xQueue = (QueueHandle_t*)pvParameters;
+  LedCommandHandler_t ledCommandHandlers[] = {
+      [LED_STATUS_CONFIG_BLINK] = Led_HandleConfigBlink,
+      [LED_STATUS_RUN_ON] = Led_HandleRunOn,
+      [LED_STATUS_CONFIG_ERROR] = Led_HandleConfigError,
+      [LED_STATUS_ERROR_OFF] = Led_HandleErrorOff,
+      [LED_STATUS_ERROR_ON] = Led_HandleErrorOn
+  };
+
+  QueueHandle_t pxQueue = (QueueHandle_t)pvParameters;
+  LedTaskCommand_t tCmd;
 
   while (1)
   {
-    if(xQueueReceive(*tLedRsc.xQueue, &tLedRsc.tCmd, portMAX_DELAY) == pdPASS)
+    if(xQueueReceive(pxQueue, &tCmd, portMAX_DELAY) == pdPASS)
     {
-      switch (tLedRsc.tCmd)
+      if(tCmd < LED_STATUS_UNKNOWN)
       {
-      case LED_STATUS_CONFIG_BLINK:
-        Led_ToggleConfigRun();
-        vTaskDelay(500);
-        break;
-      case LED_STATUS_RUN_ON:
-        Led_EnableConfigRun();
-        break;
-      case LED_STATUS_CONFIG_ERROR:
-        Led_EnableConfigError();
-        break;
-      case LED_STATUS_ERROR:
-      default:
-        Led_EnableConfigError();
-        Led_EnableError();
-        break;
+        ledCommandHandlers[tCmd]();
       }
     }
   }

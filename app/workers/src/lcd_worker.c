@@ -7,12 +7,18 @@
 
 #include <stdio.h>
 #include <math.h>
+
+#include "lcd_worker.h"
+#include "app_manager.h"
 #include "ssd1306.h"
 #include "OS_Dependent.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 
 #define PI_180 0.0174532
+
+typedef void (*LCD_ScreenFunction_t)(void);
 
 static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
     { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
@@ -106,5 +112,61 @@ void LCD_OctahedronWorker(void *pvParameters)
     ssd1306_UpdateScreen();
 
     vTaskDelay(10);
+  }
+}
+
+static void ShowIdleScreen(void)
+{
+  ssd1306_WriteString("Idle Screen\n", Font_6x8, White);
+}
+
+static void ShowBootScreen(void)
+{
+  ssd1306_WriteString("Boot Screen\n", Font_6x8, White);
+}
+
+static void ShowVertexScreen(void)
+{
+  ssd1306_WriteString("Vertex Screen\n", Font_6x8, White);
+}
+
+static void ShowIoExchangeScreen(void)
+{
+  ssd1306_WriteString("IO Exchange Screen\n", Font_6x8, White);
+}
+
+void LCD_Worker(void *pvParameters)
+{
+  LCD_ScreenFunction_t screenFunctions[] = {
+      [LCD_COMMAND_IDLE_SCREEN] = ShowIdleScreen,
+      [LCD_COMMAND_BOOT_SCREEN] = ShowBootScreen,
+      [LCD_COMMAND_VERTEX_SCREEN] = ShowVertexScreen,
+      [LCD_COMMAND_IOXCHANGE_SCREEN] = ShowIoExchangeScreen
+  };
+
+  FreeRTOS_THREAD_T *pThread = (FreeRTOS_THREAD_T *)pvParameters;
+  QueueHandle_t lcdQueue = (QueueHandle_t)pThread->pvArg;
+  LcdTaskScreen_t tLcdCmd;
+
+  ssd1306_Init();
+
+  while (1)
+  {
+    if(xQueueReceive(lcdQueue, &tLcdCmd, portMAX_DELAY) == pdPASS)
+    {
+      ssd1306_Fill(Black);
+      if(tLcdCmd < LCD_COMMAND_UNKNOWN)
+      {
+        screenFunctions[tLcdCmd]();
+      }
+      else
+      {
+        ssd1306_WriteString("Unknown command received. Defaulting to Idle Screen.", Font_6x8, White);
+        ShowIdleScreen();
+      }
+      ssd1306_SetCursor(0, 0);
+      ssd1306_UpdateScreen();
+      vTaskDelay(10);
+    }
   }
 }

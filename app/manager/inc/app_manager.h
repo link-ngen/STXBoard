@@ -14,10 +14,10 @@
 typedef struct FreeRTOS_THREAD_Ttag FreeRTOS_THREAD_T;
 struct FreeRTOS_THREAD_Ttag
 {
-  TaskHandle_t    hThread;    // Handle to the task object.
-  TaskFunction_t  pfnThread;  // Pointer to the thread function.
-  void*           pvArg;      // Pointer to the thread function argument.
-  FreeRTOS_THREAD_T* netx;
+  TaskHandle_t        hThread;    // Handle to the task object.
+  TaskFunction_t      pfnThread;  // Pointer to the thread function.
+  void*               pvArg;      // Pointer to the thread function argument.
+  FreeRTOS_THREAD_T*  nextThread;
 };
 
 void app_init();

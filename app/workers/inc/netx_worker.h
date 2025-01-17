@@ -9,9 +9,15 @@
 #define WORKERS_INC_NETX_WORKER_H_
 
 #include <stdbool.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+
 #include "cifXErrors.h"
 #include "cifXToolkit.h"
-#include "SerialDPMInterface.h"
+
+#include "led_worker.h"
+#include "lcd_worker.h"
 
 /* netX firmware defines */
 #define  COM_CHANNEL    0     /* Use the first Channel on the choosen board */
@@ -31,6 +37,9 @@ typedef struct NetxComChannelRessource_tag
   CHANNEL_INFORMATION     tChannelInfo;     /** DPM channel information. Read during application start. */
 } NetxComChannelRessource_t;
 
+struct NetxFsmRessource_tag;
+typedef void (*NetxStateFunction_t)(struct NetxFsmRessource_tag *ptNetxRsc);
+
 typedef struct NetxFsmRessource_tag
 {
   CIFXHANDLE                  hDriver;
@@ -39,8 +48,16 @@ typedef struct NetxFsmRessource_tag
   bool                        fNetXDrvRunning;  /* netX driver is running */
 
   /**< netx state function */
-  void (*currentState)(void *pvParameters);
-  void (*lastState)(void *pvParameters);
+  NetxStateFunction_t currentState;
+  NetxStateFunction_t lastState;
+
+  /* Queue handle to signal leds  */
+  xQueueHandle xLedQueueHandle;
+  LedTaskCommand_t tLedCmd;
+
+  /* Queue handle to signal lcd  */
+  xQueueHandle xLcdQueueHandle;
+  LedTaskCommand_t tLcdCmd;
 
 } NetxFsmRessource_t;
 
