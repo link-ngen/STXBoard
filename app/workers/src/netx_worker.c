@@ -152,7 +152,7 @@ void State_NetxPreOP(NetxFsmRessource_t *ptNetxRsc)
 {
   ptNetxRsc->fNetXDrvRunning = true;
   LedTaskCommand_t tLedCmd = LED_STATUS_CONFIG_BLINK;
-  LcdTaskScreen_t tLcdCmd = LCD_COMMAND_IOXCHANGE_SCREEN;
+  LcdTaskScreen_t tLcdCmd = LCD_COMMAND_CONFIG_SCREEN;
 
   xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
   xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdCmd, 10);

@@ -117,35 +117,40 @@ void LCD_OctahedronWorker(void *pvParameters)
 
 static void ShowIdleScreen(void)
 {
-  ssd1306_WriteString("Idle Screen\n", Font_6x8, White);
+  ssd1306_WriteString("Idle screen\n", Font_6x8, White);
 }
 
 static void ShowBootScreen(void)
 {
-  ssd1306_WriteString("Boot Screen\n", Font_6x8, White);
+  ssd1306_WriteString("Boot screen\n", Font_6x8, White);
 }
 
 static void ShowVertexScreen(void)
 {
-  ssd1306_WriteString("Vertex Screen\n", Font_6x8, White);
+  ssd1306_WriteString("Vertex screen\n", Font_6x8, White);
+}
+
+static void ShowConfigScreen(void)
+{
+  ssd1306_WriteString("Config screen\n", Font_6x8, White);
 }
 
 static void ShowIoExchangeScreen(void)
 {
-  ssd1306_WriteString("IO Exchange Screen\n", Font_6x8, White);
+  ssd1306_WriteString("IO Exchange screen\n", Font_6x8, White);
 }
 
 void LCD_Worker(void *pvParameters)
 {
   LCD_ScreenFunction_t screenFunctions[] = {
-      [LCD_COMMAND_IDLE_SCREEN] = ShowIdleScreen,
-      [LCD_COMMAND_BOOT_SCREEN] = ShowBootScreen,
-      [LCD_COMMAND_VERTEX_SCREEN] = ShowVertexScreen,
-      [LCD_COMMAND_IOXCHANGE_SCREEN] = ShowIoExchangeScreen
+      [LCD_COMMAND_IDLE_SCREEN]       = ShowIdleScreen,
+      [LCD_COMMAND_BOOT_SCREEN]       = ShowBootScreen,
+      [LCD_COMMAND_CONFIG_SCREEN]     = ShowConfigScreen,
+      [LCD_COMMAND_VERTEX_SCREEN]     = ShowVertexScreen,
+      [LCD_COMMAND_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
 
-  FreeRTOS_THREAD_T *pThread = (FreeRTOS_THREAD_T *)pvParameters;
-  QueueHandle_t lcdQueue = (QueueHandle_t)pThread->pvArg;
+  QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
   LcdTaskScreen_t tLcdCmd;
 
   ssd1306_Init();

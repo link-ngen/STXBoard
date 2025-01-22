@@ -42,7 +42,6 @@ static void Led_HandleErrorOn(void)
   Led_EnableError();
 }
 
-
 void LED_Worker(void* pvParameters)
 {
   LedCommandHandler_t ledCommandHandlers[] = {
