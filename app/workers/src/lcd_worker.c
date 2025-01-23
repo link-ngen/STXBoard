@@ -17,6 +17,7 @@
 #include "queue.h"
 
 #define PI_180 0.0174532
+#define FULL_CIRCLE 360
 
 typedef void (*LCD_ScreenFunction_t)(void);
 
@@ -46,7 +47,7 @@ static void drawOctahedron(void)
   ssd1306_Line(wireoctahedron[5][0], wireoctahedron[5][1], wireoctahedron[4][0], wireoctahedron[4][1], White);
 }
 
-void rotateOctahedron(int16_t pitch, int16_t roll, int16_t yaw)
+static void rotateOctahedron(int16_t pitch, int16_t roll, int16_t yaw)
 {
   float rotx, roty, rotz, rotxx, rotyy, rotxxx, rotyyy;
   float pitchRad, rollRad, yawRad;
@@ -92,7 +93,7 @@ void LCD_OctahedronWorker(void *pvParameters)
   while(1)
   {
     ssd1306_Fill(Black);
-    if(angle > 360)
+    if(angle > FULL_CIRCLE)
     {
       angle = 0;
     }
@@ -115,6 +116,48 @@ void LCD_OctahedronWorker(void *pvParameters)
   }
 }
 
+static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
+{
+  // Adjust angles with the offset and ensure they remain within 0-360°
+  startAngle %= (FULL_CIRCLE + startAngle);
+  endAngle %= (FULL_CIRCLE + startAngle);
+
+  // Draw points in the specified angle range
+  for(uint16_t angle = startAngle; angle <= endAngle; ++angle)
+  {
+    // Convert angle to radians
+    float rad = angle * PI_180;
+
+    // Calculate pixel positions using cos() and sin()
+    int16_t x = x0 + (int16_t) (radius * cosf(rad)); // X-Position
+    int16_t y = y0 - (int16_t) (radius * sinf(rad)); // Y-Position
+
+    ssd1306_DrawPixel(x, y, White);
+  }
+}
+
+static void DrawLoadingAnimation(uint8_t x0, uint8_t y0, uint8_t radius, uint32_t delay_ms)
+{
+  uint16_t progressAngle = 0;          // Start at 0 degrees
+  const uint16_t startAngle = 89;
+  const uint16_t fullCircle = FULL_CIRCLE + startAngle;    // Full circle in degrees
+  const uint8_t stepAngle = 15;      // Step size per iteration
+
+  while(progressAngle <= fullCircle)
+  {
+    // Draw the new progress segment with the given start- and process angle
+    DrawCircleSegment(x0, y0, radius, startAngle, progressAngle);
+
+    ssd1306_UpdateScreen();
+
+    // Increment the progress angle
+    progressAngle += stepAngle;
+
+    // Delay for smooth animation
+    vTaskDelay(delay_ms);
+  }
+}
+
 static void ShowIdleScreen(void)
 {
   ssd1306_WriteString("Idle screen\n", Font_6x8, White);
@@ -132,7 +175,8 @@ static void ShowVertexScreen(void)
 
 static void ShowConfigScreen(void)
 {
-  ssd1306_WriteString("Config screen\n", Font_6x8, White);
+  ssd1306_WriteString("Checking config.\n", Font_6x8, White);
+  DrawLoadingAnimation(64, 32, 16, 8);
 }
 
 static void ShowIoExchangeScreen(void)

@@ -16,7 +16,7 @@ static void Led_HandleConfigBlink(void)
 {
   Led_ToggleConfigRun();
   Led_DisableError();
-  vTaskDelay(500);
+  vTaskDelay(127);
 }
 
 static void Led_HandleRunOn(void)
@@ -45,11 +45,11 @@ static void Led_HandleErrorOn(void)
 void LED_Worker(void* pvParameters)
 {
   LedCommandHandler_t ledCommandHandlers[] = {
-      [LED_STATUS_CONFIG_BLINK] = Led_HandleConfigBlink,
-      [LED_STATUS_RUN_ON] = Led_HandleRunOn,
-      [LED_STATUS_CONFIG_ERROR] = Led_HandleConfigError,
-      [LED_STATUS_ERROR_OFF] = Led_HandleErrorOff,
-      [LED_STATUS_ERROR_ON] = Led_HandleErrorOn
+      [LED_STATUS_CONFIG_BLINK]   = Led_HandleConfigBlink,
+      [LED_STATUS_RUN_ON]         = Led_HandleRunOn,
+      [LED_STATUS_CONFIG_ERROR]   = Led_HandleConfigError,
+      [LED_STATUS_ERROR_OFF]      = Led_HandleErrorOff,
+      [LED_STATUS_ERROR_ON]       = Led_HandleErrorOn
   };
 
   QueueHandle_t pxQueue = (QueueHandle_t)pvParameters;
