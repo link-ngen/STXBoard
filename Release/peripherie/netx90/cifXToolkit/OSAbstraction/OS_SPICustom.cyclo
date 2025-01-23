@@ -1,0 +1,6 @@
+../peripherie/netx90/cifXToolkit/OSAbstraction/OS_SPICustom.c:49:6:OS_SpiInit	1
+../peripherie/netx90/cifXToolkit/OSAbstraction/OS_SPICustom.c:62:6:OS_SpiAssert	1
+../peripherie/netx90/cifXToolkit/OSAbstraction/OS_SPICustom.c:72:6:OS_SpiDeassert	1
+../peripherie/netx90/cifXToolkit/OSAbstraction/OS_SPICustom.c:82:6:OS_SpiLock	2
+../peripherie/netx90/cifXToolkit/OSAbstraction/OS_SPICustom.c:99:6:OS_SpiUnlock	2
+../peripherie/netx90/cifXToolkit/OSAbstraction/OS_SPICustom.c:119:6:OS_SpiTransfer	5

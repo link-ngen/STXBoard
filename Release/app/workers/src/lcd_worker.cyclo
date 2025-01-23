@@ -1,0 +1,7 @@
+../app/workers/src/lcd_worker.c:171:13:ShowVertexScreen	1
+../app/workers/src/lcd_worker.c:182:13:ShowIoExchangeScreen	1
+../app/workers/src/lcd_worker.c:166:13:ShowBootScreen	1
+../app/workers/src/lcd_worker.c:161:13:ShowIdleScreen	1
+../app/workers/src/lcd_worker.c:176:13:ShowConfigScreen	3
+../app/workers/src/lcd_worker.c:85:6:LCD_OctahedronWorker	2
+../app/workers/src/lcd_worker.c:187:6:LCD_Worker	3

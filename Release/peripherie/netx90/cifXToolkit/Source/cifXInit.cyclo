@@ -1,0 +1,17 @@
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:2073:16:cifXCreateSystemDevice	17
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:122:13:cifXDeleteChannelInstance	15
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:2861:16:cifXHandleWarmstartParameter	9
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4006:16:cifXStopDevice	11
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:1270:16:cifXDownloadCNFFiles.isra	19
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:1101:16:cifXDownloadFWFiles.isra	16
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:102:6:cifXTKitCyclicTimer	3
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:230:9:cifXDetectChipTypebyROMLoader	7
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:1465:9:cifXReadHardwareIdent	4
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:1520:9:cifXReadFirmwareIdent	4
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:1587:9:cifXStartModule	8
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4150:6:cifXTKitEnableHWInterrupt	3
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4168:6:cifXTKitDisableHWInterrupt	3
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4186:9:cifXTKitAddDevice	259
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4271:9:cifXTKitRemoveDevice	9
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4386:6:cifXTKitDeinit	5
+../peripherie/netx90/cifXToolkit/Source/cifXInit.c:4353:9:cifXTKitInit	3

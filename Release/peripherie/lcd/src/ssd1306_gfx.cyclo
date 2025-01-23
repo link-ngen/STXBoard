@@ -1,0 +1,6 @@
+../peripherie/lcd/src/ssd1306_gfx.c:10:13:ssd1306_GFX_DrawFastVLine	1
+../peripherie/lcd/src/ssd1306_gfx.c:67:6:ssd1306_GFX_Translate	1
+../peripherie/lcd/src/ssd1306_gfx.c:72:6:ssd1306_GFX_FillRectangle	2
+../peripherie/lcd/src/ssd1306_gfx.c:84:6:ssd1306_GFX_FillCircle	5
+../peripherie/lcd/src/ssd1306_gfx.c:90:6:ssd1306_GFX_FillTriangle	15
+../peripherie/lcd/src/ssd1306_gfx.c:178:6:ssd1306_GFX_DrawBitMap	5

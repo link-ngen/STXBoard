@@ -86,7 +86,7 @@ void LCD_OctahedronWorker(void *pvParameters)
 {
 	/* setup */
   ssd1306_Init(); /* initialize the display */
-  uint32_t stime, fps = 0, frames = 0;
+  uint32_t stime = 0, fps = 0, frames = 0;
   char string_fps[3];
   int16_t angle = 0;
   /* task loop */
@@ -176,7 +176,7 @@ static void ShowVertexScreen(void)
 static void ShowConfigScreen(void)
 {
   ssd1306_WriteString("Checking config.\n", Font_6x8, White);
-  DrawLoadingAnimation(64, 32, 16, 8);
+  DrawLoadingAnimation(originx, originy, 14, 8);
 }
 
 static void ShowIoExchangeScreen(void)

@@ -1,0 +1,6 @@
+../app/workers/src/led_worker.c:34:13:Led_HandleErrorOff	1
+../app/workers/src/led_worker.c:28:13:Led_HandleConfigError	1
+../app/workers/src/led_worker.c:39:13:Led_HandleErrorOn	1
+../app/workers/src/led_worker.c:22:13:Led_HandleRunOn	1
+../app/workers/src/led_worker.c:15:13:Led_HandleConfigBlink	1
+../app/workers/src/led_worker.c:45:6:LED_Worker	3
