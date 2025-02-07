@@ -128,38 +128,41 @@ void State_NetxInit(NetxFsmRessource_t *ptNetxRsc)
   int32_t lRet = InitializeToolkit(ptNetxRsc);
 
   LedTaskCommand_t tLedCmd = LED_STATUS_UNKNOWN;
-  LcdTaskScreen_t tLcdCmd = LCD_COMMAND_UNKNOWN;
+  LcdPacket_T tLcdPacket = { LCD_COMMAND_UNKNOWN, "init...\n" };
 
   if (CIFX_NO_ERROR == lRet)
   {
     ptNetxRsc->currentState = State_NetxPreOP;
     tLedCmd = LED_STATUS_RUN_ON;
-    tLcdCmd = LCD_COMMAND_BOOT_SCREEN;
+    tLcdPacket.tCmd = LCD_COMMAND_BOOT_SCREEN;
   }
   else
   {
     ptNetxRsc->currentState = State_NetxError;
     tLedCmd = LED_STATUS_ERROR_ON;
-    tLcdCmd = LCD_COMMAND_IDLE_SCREEN;
+    tLcdPacket.tCmd = LCD_COMMAND_IDLE_SCREEN;
   }
   ptNetxRsc->lastState = State_NetxInit;
 
   xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
-  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdPacket, 10);
 }
 
 void State_NetxPreOP(NetxFsmRessource_t *ptNetxRsc)
 {
-  ptNetxRsc->fNetXDrvRunning = true;
   LedTaskCommand_t tLedCmd = LED_STATUS_CONFIG_BLINK;
-  LcdTaskScreen_t tLcdCmd = LCD_COMMAND_CONFIG_SCREEN;
+  LcdPacket_T tLcdPacket = { LCD_COMMAND_CONFIG_SCREEN, "configuring...\n" };
 
   xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
-  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdPacket, 10);
 
   /* TODO: Real Time Ethernet configuration */
-  vTaskDelay(500);
-  ptNetxRsc->lastState = State_NetxPreOP;
+  vTaskDelay(10000);
+
+  /* config done */
+  //ptNetxRsc->fNetXDrvRunning = true;
+
+  ptNetxRsc->lastState = State_NetxError;
 }
 
 void State_NetxOP(NetxFsmRessource_t *ptNetxRsc)
@@ -173,11 +176,17 @@ void State_NetxOP(NetxFsmRessource_t *ptNetxRsc)
 
 void State_NetxError(NetxFsmRessource_t *ptNetxRsc)
 {
+  LedTaskCommand_t tLedCmd = LED_STATUS_ERROR_ON;
+  LcdPacket_T tLcdPacket = { LCD_COMMAND_ERROR_SCREEN, "Error\n" }; /* Error screen */
+
+  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
+  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdPacket, 10);
+
   if (ptNetxRsc->fNetXDrvRunning)
   {
+    ptNetxRsc->fNetXDrvRunning = false;
     CloseNetxChannels(ptNetxRsc);
   }
-  ptNetxRsc->fNetXDrvRunning = false;
   if (ptNetxRsc->lastState == State_NetxInit)
   {
     ptNetxRsc->currentState = ptNetxRsc->lastState;

@@ -12,7 +12,7 @@ AppQueues_t tAppQueues;
 
 void app_init()
 {
-  tAppQueues.lcdQueue = xQueueCreate(LCD_QUEUE_LEN, sizeof(LcdTaskScreen_t));
+  tAppQueues.lcdQueue = xQueueCreate(LCD_QUEUE_LEN, sizeof(LcdPacket_T));
   tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(LedTaskCommand_t));
 
   FreeRTOS_THREAD_T taskConfigs[] = {

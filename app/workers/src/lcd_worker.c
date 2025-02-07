@@ -19,7 +19,7 @@
 #define PI_180 0.0174532
 #define FULL_CIRCLE 360
 
-typedef void (*LCD_ScreenFunction_t)(void);
+typedef void (*LCD_ScreenFunction_t)(LcdPacket_T*);
 
 static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
     { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
@@ -138,50 +138,65 @@ static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint
 
 static void DrawLoadingAnimation(uint8_t x0, uint8_t y0, uint8_t radius, uint32_t delay_ms)
 {
-  uint16_t progressAngle = 0;          // Start at 0 degrees
+  uint16_t progressAngle = 0;          /* Start at 0 degrees */
   const uint16_t startAngle = 89;
-  const uint16_t fullCircle = FULL_CIRCLE + startAngle;    // Full circle in degrees
-  const uint8_t stepAngle = 15;      // Step size per iteration
+  const uint16_t fullCircle = FULL_CIRCLE + startAngle;    /* Full circle in degrees */
+  const uint8_t stepAngle = 15;      /* Step size per iteration */
 
   while(progressAngle <= fullCircle)
   {
-    // Draw the new progress segment with the given start- and process angle
+    /* Draw the new progress segment with the given start- and process angle */
     DrawCircleSegment(x0, y0, radius, startAngle, progressAngle);
 
     ssd1306_UpdateScreen();
 
-    // Increment the progress angle
+    /* Increment the progress angle */
     progressAngle += stepAngle;
 
-    // Delay for smooth animation
+    /* Delay for smooth animation */
     vTaskDelay(delay_ms);
   }
 }
 
-static void ShowIdleScreen(void)
+static void ShowIdleScreen(LcdPacket_T* ptLcdPaket)
 {
   ssd1306_WriteString("Idle screen\n", Font_6x8, White);
+  ssd1306_SetCursor(0, 10);
+  ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowBootScreen(void)
+static void ShowBootScreen(LcdPacket_T* ptLcdPaket)
 {
   ssd1306_WriteString("Boot screen\n", Font_6x8, White);
+  ssd1306_SetCursor(0, 10);
+  ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowVertexScreen(void)
+static void ShowVertexScreen(LcdPacket_T* ptLcdPaket)
 {
   ssd1306_WriteString("Vertex screen\n", Font_6x8, White);
+  ssd1306_SetCursor(0, 10);
+    ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowConfigScreen(void)
+static void ShowConfigScreen(LcdPacket_T* ptLcdPaket)
 {
   ssd1306_WriteString("Checking config.\n", Font_6x8, White);
   DrawLoadingAnimation(originx, originy, 14, 8);
 }
 
-static void ShowIoExchangeScreen(void)
+static void ShowIoExchangeScreen(LcdPacket_T* ptLcdPaket)
 {
   ssd1306_WriteString("IO Exchange screen\n", Font_6x8, White);
+  ssd1306_SetCursor(0, 10);
+  ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+}
+
+static void ShowErrorScreen(LcdPacket_T* ptLcdPaket)
+{
+  ssd1306_WriteString("Error screen\n", Font_6x8, White);
+  ssd1306_SetCursor(0, 10);
+  ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
 void LCD_Worker(void *pvParameters)
@@ -191,27 +206,28 @@ void LCD_Worker(void *pvParameters)
       [LCD_COMMAND_BOOT_SCREEN]       = ShowBootScreen,
       [LCD_COMMAND_CONFIG_SCREEN]     = ShowConfigScreen,
       [LCD_COMMAND_VERTEX_SCREEN]     = ShowVertexScreen,
+      [LCD_COMMAND_ERROR_SCREEN]      = ShowErrorScreen,
       [LCD_COMMAND_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
 
   QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
-  LcdTaskScreen_t tLcdCmd;
+  LcdPacket_T tLcdPacket;
 
   ssd1306_Init();
 
   while (1)
   {
-    if(xQueueReceive(lcdQueue, &tLcdCmd, portMAX_DELAY) == pdPASS)
+    if(pdPASS == xQueueReceive(lcdQueue, &tLcdPacket, portMAX_DELAY))
     {
       ssd1306_Fill(Black);
-      if(tLcdCmd < LCD_COMMAND_UNKNOWN)
+      if(tLcdPacket.tCmd < LCD_COMMAND_UNKNOWN)
       {
-        screenFunctions[tLcdCmd]();
+        screenFunctions[tLcdPacket.tCmd](&tLcdPacket);
       }
       else
       {
         ssd1306_WriteString("Unknown command received. Defaulting to Idle Screen.", Font_6x8, White);
-        ShowIdleScreen();
+        ShowIdleScreen(&tLcdPacket);
       }
       ssd1306_SetCursor(0, 0);
       ssd1306_UpdateScreen();
