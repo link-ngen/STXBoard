@@ -176,7 +176,7 @@ static void ShowVertexScreen(LcdPacket_T* ptLcdPaket)
 {
   ssd1306_WriteString("Vertex screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
-    ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+  ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
 static void ShowConfigScreen(LcdPacket_T* ptLcdPaket)
