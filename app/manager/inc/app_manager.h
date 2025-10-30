@@ -21,12 +21,12 @@ typedef struct AppQueues_tag
 typedef struct FreeRTOS_THREAD_Ttag FreeRTOS_THREAD_T;
 struct FreeRTOS_THREAD_Ttag
 {
-  TaskFunction_t      pfnThread;  // Pointer to the thread function.
+  TaskFunction_t      pfnThread;    // Pointer to the thread function.
   const char          *pcName;
   uint16_t            usStackDepth;
-  void                *pvArg;      // Pointer to the thread function argument.
+  void                *pvArg;       // Pointer to the thread function argument.
   UBaseType_t         uxPriority;
-  TaskHandle_t        hThread;    // Handle to the task object.
+  TaskHandle_t        hThread;      // Handle to the task object.
 };
 
 void app_init();

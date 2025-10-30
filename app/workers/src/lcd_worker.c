@@ -29,6 +29,11 @@ static uint16_t wireoctahedron[6][2];
 static const uint8_t originx = 64;
 static const uint8_t originy = 32;
 
+uint32_t stime, fps, frames;
+char string_fps[3];
+int16_t angle;
+
+
 static void drawOctahedron(void)
 {
   ssd1306_Line(wireoctahedron[0][0], wireoctahedron[0][1], wireoctahedron[1][0], wireoctahedron[1][1], White);
@@ -82,39 +87,39 @@ static void rotateOctahedron(int16_t pitch, int16_t roll, int16_t yaw)
   }
 }
 
-void LCD_OctahedronWorker(void *pvParameters)
-{
-	/* setup */
-  ssd1306_Init(); /* initialize the display */
-  uint32_t stime = 0, fps = 0, frames = 0;
-  char string_fps[3];
-  int16_t angle = 0;
-  /* task loop */
-  while(1)
-  {
-    ssd1306_Fill(Black);
-    if(angle > FULL_CIRCLE)
-    {
-      angle = 0;
-    }
-
-    rotateOctahedron(angle, 0, 0);
-    drawOctahedron();
-
-    angle += 4;
-    fps += 1000 / (OS_GetMilliSecCounter() - stime);
-    stime = OS_GetMilliSecCounter();
-    frames++;
-
-    ssd1306_SetCursor(1, 55);
-    sprintf(string_fps, "%d", (int)(fps / frames));
-    ssd1306_WriteString(string_fps, Font_6x8, White);
-    ssd1306_WriteString(" fps", Font_6x8, White);
-    ssd1306_UpdateScreen();
-
-    vTaskDelay(10);
-  }
-}
+//void LCD_OctahedronWorker(void *pvParameters)
+//{
+//	/* setup */
+//  ssd1306_Init(); /* initialize the display */
+//  uint32_t stime = 0, fps = 0, frames = 0;
+//  char string_fps[3];
+//  int16_t angle = 0;
+//  /* task loop */
+//  while(1)
+//  {
+//    ssd1306_Fill(Black);
+//    if(angle > FULL_CIRCLE)
+//    {
+//      angle = 0;
+//    }
+//
+//    rotateOctahedron(angle, 0, 0);
+//    drawOctahedron();
+//
+//    angle += 4;
+//    fps += 1000 / (OS_GetMilliSecCounter() - stime);
+//    stime = OS_GetMilliSecCounter();
+//    frames++;
+//
+//    ssd1306_SetCursor(1, 55);
+//    sprintf(string_fps, "%d", (int)(fps / frames));
+//    ssd1306_WriteString(string_fps, Font_6x8, White);
+//    ssd1306_WriteString(" fps", Font_6x8, White);
+//    ssd1306_UpdateScreen();
+//
+//    vTaskDelay(10);
+//  }
+//}
 
 static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
 {
@@ -174,9 +179,25 @@ static void ShowBootScreen(LcdPacket_T* ptLcdPaket)
 
 static void ShowVertexScreen(LcdPacket_T* ptLcdPaket)
 {
-  ssd1306_WriteString("Vertex screen\n", Font_6x8, White);
-  ssd1306_SetCursor(0, 10);
-    ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+  ssd1306_Fill(Black);
+  if(angle > FULL_CIRCLE)
+  {
+    angle = 0;
+  }
+
+  rotateOctahedron(angle, 0, 0);
+  drawOctahedron();
+
+  angle += 4;
+  fps += 1000 / (OS_GetMilliSecCounter() - stime);
+  stime = OS_GetMilliSecCounter();
+  frames++;
+
+  ssd1306_SetCursor(1, 55);
+  sprintf(string_fps, "%d", (int)(fps / frames));
+  ssd1306_WriteString(string_fps, Font_6x8, White);
+  ssd1306_WriteString(" fps", Font_6x8, White);
+  ssd1306_UpdateScreen();
 }
 
 static void ShowConfigScreen(LcdPacket_T* ptLcdPaket)

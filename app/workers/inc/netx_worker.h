@@ -13,48 +13,49 @@
 #include "task.h"
 #include "queue.h"
 
+#include "NetxComChanIF.h"
 #include "cifXErrors.h"
 #include "cifXToolkit.h"
 
 #include "led_worker.h"
 #include "lcd_worker.h"
 
+#include "app_manager.h"
+
 /* netX firmware defines */
-#define  COM_CHANNEL    0     /* Use the first Channel on the choosen board */
-#define  CHANNEL_COUNT  COM_CHANNEL + 1
+#define  COM_CHANNEL                  0     /* Use the first Channel on the choosen board */
+#define  USED_COMMUNICATION_CHANNELS  COM_CHANNEL + 1
 
-typedef struct NetxSysChannelRessource_tag
+struct NetxRessource_tag;
+typedef void (*NetxStateFunction_t)(struct NetxRessource_tag *ptNetxRsc);
+
+/** A communication channel struct.
+ * This struct holds data related to one channel handler.
+ */
+typedef struct
 {
-  CIFX_PACKET             tPacket;
-  CIFXHANDLE              hSys;         /** Handle of netX DPM communication channel                */
-  BOARD_INFORMATION       tBoardInfo;     /** DPM channel information. Read during application start. */
-} NetxSysChannelRessource_t;
+  NETX_COMM_CHANNEL_HANDLER_T      tCommChannelHandler;  /** This is the communication channel handler for the cifX communication channel */
+  NETX_COMM_CHANNEL_HANDLER_RSC_H  hCommChannelRsc;      /** Resource handle for the communication channel handler  */
 
-typedef struct NetxComChannelRessource_tag
+  CIFXHANDLE            hCifXChannel;        /** Handle of netX DPM communication channel                */
+  CHANNEL_INFORMATION   tCifXChannelInfo;    /** DPM channel information. Read during application start. */
+} NETX_COMM_CHANNEL_T;
+
+typedef struct NetxRessource_tag
 {
-  CIFX_PACKET             tPacket;
-  CIFXHANDLE              hChannel;         /** Handle of netX DPM communication channel                */
-  CHANNEL_INFORMATION     tChannelInfo;     /** DPM channel information. Read during application start. */
-} NetxComChannelRessource_t;
-
-struct NetxFsmRessource_tag;
-typedef void (*NetxStateFunction_t)(struct NetxFsmRessource_tag *ptNetxRsc);
-
-typedef struct NetxFsmRessource_tag
-{
-  CIFXHANDLE                  hDriver;
-  NetxSysChannelRessource_t   tSysRsc;
-  NetxComChannelRessource_t   tChannelRsc;
-  bool                        fNetXDrvRunning;  /* netX driver is running */
+  CIFXHANDLE                      hDriver;
+  NETX_COMM_CHANNEL_T             atCommChannels[USED_COMMUNICATION_CHANNELS];
+  BOARD_INFORMATION               tCifXBoardInfo;   /** netX Board information. Read during application start.  */
+  bool                            fNetXDrvRunning;  /* netX driver is running */
 
   /**< netx state function */
-  NetxStateFunction_t currentState;
-  NetxStateFunction_t lastState;
+  NetxStateFunction_t             currentState;
+  NetxStateFunction_t             lastState;
 
-  AppQueues_t *tAppQueues;
+  AppQueues_t                     *tAppQueues;
 
-} NetxFsmRessource_t;
+} NetxRessource_t;
 
-void NetxDemoWorker(void *pvParameters);
+void NetxWorker(void *pvParameters);
 
 #endif /* WORKERS_INC_NETX_WORKER_H_ */

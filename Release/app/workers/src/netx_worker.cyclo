@@ -1,4 +1,0 @@
-../app/workers/src/netx_worker.c:174:6:State_NetxError	4
-../app/workers/src/netx_worker.c:151:6:State_NetxPreOP	1
-../app/workers/src/netx_worker.c:126:6:State_NetxInit	7
-../app/workers/src/netx_worker.c:200:6:NetxDemoWorker	1
