@@ -81,6 +81,7 @@ void* OS_Memalloc(uint32_t ulSize)
 void OS_Memfree(void *pvMem)
 {
   vPortFree(pvMem);
+  pvMem = NULL;
 }
 
 /*****************************************************************************/

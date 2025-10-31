@@ -8,6 +8,10 @@
 #ifndef WORKERS_INC_LCD_WORKER_H_
 #define WORKERS_INC_LCD_WORKER_H_
 
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+
 typedef enum {
   LCD_COMMAND_IDLE_SCREEN,      /* screen if no activities        */
   LCD_COMMAND_BOOT_SCREEN,      /* screen after reset             */
@@ -22,12 +26,12 @@ typedef struct LcdPacket_Ttag LcdPacket_T;
 struct LcdPacket_Ttag
 {
   LcdCmdScreen_t tCmd;
-  char* pcMessage;
+  char pcMessage[32];
 };
 
-#define LCD_QUEUE_LEN 2
-
+#define LCD_QUEUE_LEN 1
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
+void LCD_PutPacket(QueueHandle_t q, const LcdPacket_T *ptLcdPkt);
 
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

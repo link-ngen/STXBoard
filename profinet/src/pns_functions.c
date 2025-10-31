@@ -377,6 +377,7 @@ uint32_t  PNS_ConfigureStack(PNS_RESSOURCES_T* ptRsc)
   return CIFX_NO_ERROR;
 }
 
+#ifdef HOST_APPLICATION_SETS_SERIAL_NUMBER
 uint32_t PNS_SetOemData(PNS_RESSOURCES_T* ptRsc)
 {
   uint32_t ulRet = CIFX_NO_ERROR;
@@ -442,7 +443,9 @@ uint32_t PNS_SetOemData(PNS_RESSOURCES_T* ptRsc)
   /* Check status of cifX function and confirmation packet */
   return (CIFX_NO_ERROR != ulRet) ? ulRet : ptRsc->tPacket.tHeader.ulState;
 }
+#endif
 
+#if defined(HOST_APPLICATION_SETS_MAC_ADDRESS) || defined(HOST_APPLICATION_SETS_SERIAL_NUMBER)
 uint32_t  PNS_ActivateDdp(PNS_RESSOURCES_T* ptRsc)
 {
   uint32_t ulRet = CIFX_NO_ERROR;
@@ -460,7 +463,9 @@ uint32_t  PNS_ActivateDdp(PNS_RESSOURCES_T* ptRsc)
   /* Check status of cifX function and confirmation packet */
   return (CIFX_NO_ERROR != ulRet) ? ulRet : ptRsc->tPacket.tHeader.ulState;
 }
+#endif
 
+#ifdef HOST_APPLICATION_SETS_MAC_ADDRESS
 uint32_t  PNS_SetMacAddress(PNS_RESSOURCES_T* ptRsc)
 {
   uint32_t                   ulRet = CIFX_NO_ERROR;
@@ -490,10 +495,11 @@ uint32_t  PNS_SetMacAddress(PNS_RESSOURCES_T* ptRsc)
   ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &(ptRsc->tPacket), TXRX_TIMEOUT);
   return (CIFX_NO_ERROR != ulRet) ? ulRet : ptRsc->tPacket.tHeader.ulState;
 }
+#endif
 
 bool PNS_PacketHandler(CIFX_PACKET* ptPacket, void* pvUserData)
 {
-  PNS_RESSOURCES_T *ptRsc = pvUserData;
+  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)pvUserData;
   bool fPacketCouldBeHandled = false;
 
   if(ptPacket != &(ptRsc->tPacket))

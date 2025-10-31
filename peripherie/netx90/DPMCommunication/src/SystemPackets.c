@@ -243,6 +243,15 @@ void SysPkt_PD0InTriggeredReq(CIFX_PACKET *ptPkt)
   tSetTriggerReq->tData.usSyncHskTriggerType = HIL_TRIGGER_TYPE_SYNC_NONE;
 }
 
+void SysPkt_DeleteConfig(CIFX_PACKET* ptPkt)
+{
+  HIL_DELETE_CONFIG_REQ_T* ptReq = (HIL_DELETE_CONFIG_REQ_T*)ptPkt;
+  memset(ptReq, 0, sizeof(*ptReq));
+
+  ptReq->tHead.ulDest = HIL_PACKET_DEST_DEFAULT_CHANNEL;
+  ptReq->tHead.ulCmd = HIL_DELETE_CONFIG_REQ;
+}
+
 /*******************************************************************************
  *  _           _ _                 _
  * (_)         | (_)           _   (_)

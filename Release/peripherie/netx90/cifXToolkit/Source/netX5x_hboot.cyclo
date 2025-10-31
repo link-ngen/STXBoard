@@ -1,0 +1,5 @@
+../peripherie/netx90/cifXToolkit/Source/netX5x_hboot.c:96:12:hboot_waitforbitstate.isra	5
+../peripherie/netx90/cifXToolkit/Source/netX5x_hboot.c:163:16:hboot_send_packet.constprop	3
+../peripherie/netx90/cifXToolkit/Source/netX5x_hboot.c:218:16:hboot_get_packet	4
+../peripherie/netx90/cifXToolkit/Source/netX5x_hboot.c:55:5:IsNetX51or52ROM	6
+../peripherie/netx90/cifXToolkit/Source/netX5x_hboot.c:294:9:cifXStartBootloader_hboot	17

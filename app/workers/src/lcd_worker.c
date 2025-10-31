@@ -12,9 +12,6 @@
 #include "app_manager.h"
 #include "ssd1306.h"
 #include "OS_Dependent.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
 
 #define PI_180 0.0174532
 #define FULL_CIRCLE 360
@@ -86,40 +83,6 @@ static void rotateOctahedron(int16_t pitch, int16_t roll, int16_t yaw)
     wireoctahedron[i][1] = rotyyy;
   }
 }
-
-//void LCD_OctahedronWorker(void *pvParameters)
-//{
-//	/* setup */
-//  ssd1306_Init(); /* initialize the display */
-//  uint32_t stime = 0, fps = 0, frames = 0;
-//  char string_fps[3];
-//  int16_t angle = 0;
-//  /* task loop */
-//  while(1)
-//  {
-//    ssd1306_Fill(Black);
-//    if(angle > FULL_CIRCLE)
-//    {
-//      angle = 0;
-//    }
-//
-//    rotateOctahedron(angle, 0, 0);
-//    drawOctahedron();
-//
-//    angle += 4;
-//    fps += 1000 / (OS_GetMilliSecCounter() - stime);
-//    stime = OS_GetMilliSecCounter();
-//    frames++;
-//
-//    ssd1306_SetCursor(1, 55);
-//    sprintf(string_fps, "%d", (int)(fps / frames));
-//    ssd1306_WriteString(string_fps, Font_6x8, White);
-//    ssd1306_WriteString(" fps", Font_6x8, White);
-//    ssd1306_UpdateScreen();
-//
-//    vTaskDelay(10);
-//  }
-//}
 
 static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
 {
@@ -220,6 +183,15 @@ static void ShowErrorScreen(LcdPacket_T* ptLcdPaket)
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
+void LCD_PutPacket(QueueHandle_t q, const LcdPacket_T *ptLcdPkt)
+{
+  if(q == NULL || ptLcdPkt == NULL)
+    return;
+
+  LcdPacket_T tTmp = *ptLcdPkt; /* local copy */
+  xQueueOverwrite(q, &tTmp);
+}
+
 void LCD_Worker(void *pvParameters)
 {
   LCD_ScreenFunction_t screenFunctions[] = {
@@ -232,27 +204,46 @@ void LCD_Worker(void *pvParameters)
   };
 
   QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
-  LcdPacket_T tLcdPacket;
+  LcdCmdScreen_t currentCommand  = LCD_COMMAND_IDLE_SCREEN;
+  LcdPacket_T lastPacket = { .tCmd = LCD_COMMAND_IDLE_SCREEN, .pcMessage = "" };
 
   ssd1306_Init();
 
-  while (1)
+  while(1)
   {
-    if(pdPASS == xQueueReceive(lcdQueue, &tLcdPacket, portMAX_DELAY))
+    LcdPacket_T tLcdPacketTemp;
+    BaseType_t queueResult;
+
+    if(currentCommand == LCD_COMMAND_VERTEX_SCREEN)
     {
-      ssd1306_Fill(Black);
-      if(tLcdPacket.tCmd < LCD_COMMAND_UNKNOWN)
-      {
-        screenFunctions[tLcdPacket.tCmd](&tLcdPacket);
-      }
-      else
-      {
-        ssd1306_WriteString("Unknown command received. Defaulting to Idle Screen.", Font_6x8, White);
-        ShowIdleScreen(&tLcdPacket);
-      }
-      ssd1306_SetCursor(0, 0);
-      ssd1306_UpdateScreen();
-      vTaskDelay(10);
+      queueResult = xQueueReceive(lcdQueue, &tLcdPacketTemp, pdMS_TO_TICKS(1));
     }
+    else
+    {
+      queueResult = xQueueReceive(lcdQueue, &tLcdPacketTemp, portMAX_DELAY);
+    }
+
+    if(queueResult == pdPASS)
+    {
+      lastPacket = tLcdPacketTemp;
+      currentCommand = lastPacket.tCmd;
+    }
+
+    ssd1306_Fill(Black);
+    if(lastPacket.tCmd < LCD_COMMAND_UNKNOWN)
+    {
+      screenFunctions[lastPacket.tCmd](&lastPacket);
+    }
+    else
+    {
+      ssd1306_WriteString("Unknown cmd recv. Idle Screen.", Font_6x8, White);
+      ShowIdleScreen(&lastPacket);
+      currentCommand = LCD_COMMAND_IDLE_SCREEN;
+    }
+
+    ssd1306_SetCursor(0, 0);
+    ssd1306_UpdateScreen();
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
+
 }

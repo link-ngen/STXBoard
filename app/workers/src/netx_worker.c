@@ -10,12 +10,14 @@
 #include "app_config.h"
 #include "app_manager.h"
 #include "netx_worker.h"
+#include "SystemPackets.h"
 #include "SerialDPMInterface.h"
 
 extern NETX_COMM_CHANNEL_HANDLER_T g_tRealtimeEthernetHandler;
 extern NETX_COMM_CHANNEL_HANDLER_T g_tNetworkServicesHandlers;
 
 static NetxRessource_t tNetxFSM = { 0 };
+static PDEVICEINSTANCE ptDevInstance;
 
 static void State_NetxInit(NetxRessource_t *ptNetxRsc);
 static void State_NetxPreOP(NetxRessource_t *ptNetxRsc);
@@ -73,7 +75,7 @@ static int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
 
   if(CIFX_NO_ERROR == lRet)
   {
-    PDEVICEINSTANCE ptDevInstance = (PDEVICEINSTANCE) OS_Memalloc(sizeof(*ptDevInstance));
+    ptDevInstance = (PDEVICEINSTANCE) OS_Memalloc(sizeof(*ptDevInstance));
     OS_Memset(ptDevInstance, 0, sizeof(*ptDevInstance));
 
     /** Set trace level of toolkit */
@@ -115,6 +117,28 @@ static int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
   return lRet;
 }
 
+static void NetX_AllChannels_Close(NetxRessource_t* ptNetxData);
+static void HandleNetXError(NetxRessource_t *ptNetxRsc, LcdCmdScreen_t lcdCmd, const char *msg, LedTaskCommand_t ledCmd,
+bool resetDriver, NetxStateFunction_t nextState)
+{
+  ptNetxRsc->tLedCmd = ledCmd;
+  ptNetxRsc->tLcdPacket.tCmd = lcdCmd;
+  snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "%s", msg);
+
+  NetX_AllChannels_Close(ptNetxRsc);
+  if(resetDriver)
+  {
+    xDriverClose(ptNetxRsc->hDriver);
+    cifXTKitDeinit();
+    OS_Memfree(ptDevInstance);
+  }
+
+  LED_PutPacket(ptNetxRsc->tAppQueues->ledQueue, &ptNetxRsc->tLedCmd);
+  LCD_PutPacket(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
+
+  ptNetxRsc->currentState = nextState;
+}
+
 /**************************************************************************************/
 /*! Call the event handler function for all channels
 *
@@ -124,7 +148,7 @@ static int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
 *   \return 0 on success.
 */
 /**************************************************************************************/
-static int32_t NetxInitializeChannels(NetxRessource_t *ptNetxData, char *szBoardName)
+static int32_t NetX_InitializeChannels(NetxRessource_t *ptNetxData, char *szBoardName)
 {
   int32_t lRet = CIFX_NO_ERROR;
   for(uint8_t i = 0; i < USED_COMMUNICATION_CHANNELS; ++i)
@@ -184,8 +208,8 @@ static int32_t NetxInitializeChannels(NetxRessource_t *ptNetxData, char *szBoard
       }
 
       /** Initialize the Stack hander */
-      if(CIFX_NO_ERROR
-        != (lRet = ptCommChannel->tCommChannelHandler.pfnInitialize(&ptCommChannel->hCommChannelRsc, ptCommChannel->hCifXChannel, ptChannelInfo)))
+      if(CIFX_NO_ERROR !=
+        (lRet = ptCommChannel->tCommChannelHandler.pfnInitialize(&ptCommChannel->hCommChannelRsc, ptCommChannel->hCifXChannel, ptChannelInfo)))
       {
         PRINTF("ERROR: Channel initialize failed: 0x%08X" NEWLINE, (unsigned int)lRet);
         return lRet;
@@ -247,10 +271,7 @@ static void NetX_AllChannels_Close(NetxRessource_t* ptNetxData)
 void State_NetxInit(NetxRessource_t *ptNetxRsc)
 {
   int32_t lRet = InitializeToolkit(ptNetxRsc);
-  PRINTF("---------- STX Application ----------" NEWLINE);
-
-  LedTaskCommand_t tLedCmd = LED_STATUS_UNKNOWN;
-  LcdPacket_T tLcdPacket = { LCD_COMMAND_UNKNOWN, "init...\n" };
+  PRINTF("---------- NetX Init ----------" NEWLINE);
 
   if (CIFX_NO_ERROR == lRet)
   {
@@ -261,106 +282,128 @@ void State_NetxInit(NetxRessource_t *ptNetxRsc)
     lRet = xDriverOpen(&ptNetxRsc->hDriver);
     if (CIFX_NO_ERROR != lRet)
     {
+      ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
+      ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
+      snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "DrvOpen err \n");
       ptNetxRsc->currentState = State_NetxError;
-      tLedCmd = LED_STATUS_ERROR_ON;
-      tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
-      tLcdPacket.pcMessage = "DrvOpen err \n";
     }
     else
     {
+      ptNetxRsc->tLedCmd = LED_STATUS_CONFIG_BLINK;
+      ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_BOOT_SCREEN;
+      snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "DrvOpen ok\n");
       ptNetxRsc->currentState = State_NetxPreOP;
-      tLedCmd = LED_STATUS_CONFIG_BLINK;
-      tLcdPacket.tCmd = LCD_COMMAND_BOOT_SCREEN;
-      tLcdPacket.pcMessage = "DrvOpen ok \n";
     }
   }
   else
   {
+    ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
+    ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_IDLE_SCREEN;
     ptNetxRsc->currentState = State_NetxError;
-    tLedCmd = LED_STATUS_ERROR_ON;
-    tLcdPacket.tCmd = LCD_COMMAND_IDLE_SCREEN;
   }
-  ptNetxRsc->lastState = State_NetxInit;
 
-  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
-  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdPacket, 10);
+  LED_PutPacket(ptNetxRsc->tAppQueues->ledQueue, &ptNetxRsc->tLedCmd);
+  LCD_PutPacket(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
+  ptNetxRsc->lastState = State_NetxInit;
 }
 
 void State_NetxPreOP(NetxRessource_t *ptNetxRsc)
 {
+  PRINTF("---------- NetX PreOP ----------" NEWLINE);
   int32_t lRet = CIFX_NO_ERROR;
-  LedTaskCommand_t tLedCmd = LED_STATUS_CONFIG_BLINK;
-  LcdPacket_T tLcdPacket = { LCD_COMMAND_CONFIG_SCREEN, "configuring...\n" };
 
-  if (CIFX_NO_ERROR != (lRet = NetxInitializeChannels(ptNetxRsc, "cifX0")))
+  if (CIFX_NO_ERROR != (lRet = NetX_InitializeChannels(ptNetxRsc, "cifX0")))
   {
+    ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
+    ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
+    snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "ChnOpen err \n");
+    ptNetxRsc->bInitErrCounter += 1;
     ptNetxRsc->currentState = State_NetxError;
-    tLedCmd = LED_STATUS_ERROR_ON;
-    tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
-    tLcdPacket.pcMessage = "ChnOpen err \n";
   }
   else if (CIFX_NO_ERROR != (lRet = NetX_ConfigureChannels(ptNetxRsc)))
   {
+    ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
+    ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
+    snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "ChnCfg err \n");
     ptNetxRsc->currentState = State_NetxError;
-    tLedCmd = LED_STATUS_ERROR_ON;
-    tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
-    tLcdPacket.pcMessage = "ChnCfg err \n";
   }
   else
   {
     /* config done */
     ptNetxRsc->fNetXDrvRunning = true;
-    ptNetxRsc->lastState = State_NetxOP;
-
-    tLedCmd = LED_STATUS_RUN_ON;
-    tLcdPacket.tCmd = LCD_COMMAND_VERTEX_SCREEN;
-    tLcdPacket.pcMessage = "";
+    ptNetxRsc->tLedCmd = LED_STATUS_RUN_ON;
+    ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_VERTEX_SCREEN;
+    snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "\n");
+    ptNetxRsc->currentState = State_NetxOP;
   }
 
-  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
-  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdPacket, 10);
+  LED_PutPacket(ptNetxRsc->tAppQueues->ledQueue, &ptNetxRsc->tLedCmd);
+  LCD_PutPacket(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
+  ptNetxRsc->lastState = State_NetxPreOP;
 }
 
 void State_NetxOP(NetxRessource_t *ptNetxRsc)
 {
+  PRINTF("---------- NetX OP ----------" NEWLINE);
+  static int32_t lRet = CIFX_NO_ERROR;
+
   /* TODO: prepare the data to io struct object */
+  /* TODO: send command to neopixels */
   if (NULL != ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask)
   {
-    ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
+    lRet = ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
+    if ((CIFX_DEV_NO_COM_FLAG == lRet) || /* ignore (not in communication) */
+       (CIFX_NO_ERROR == lRet))
+    {
+
+    }
+    else if (CIFX_DEV_EXCHANGE_FAILED == lRet)
+    {
+      ptNetxRsc->tLedCmd = LED_STATUS_ERROR_ON;
+      ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_ERROR_SCREEN;
+      snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "ChnCom failed \n");
+
+      LED_PutPacket(ptNetxRsc->tAppQueues->ledQueue, &ptNetxRsc->tLedCmd);
+      LCD_PutPacket(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
+      ptNetxRsc->currentState = State_NetxError;
+    }
+    else
+    {
+      ptNetxRsc->currentState = State_NetxSTOP;
+    }
   }
-  /* TODO: Check communication state. */
   ptNetxRsc->lastState = State_NetxOP;
-  OS_Sleep(1);
+  vTaskDelay(1);
 }
 
 void State_NetxError(NetxRessource_t *ptNetxRsc)
 {
-//  LedTaskCommand_t tLedCmd = LED_STATUS_ERROR_ON;
-//  LcdPacket_T tLcdPacket = { LCD_COMMAND_ERROR_SCREEN, "Error\n" }; /* Error screen */
-//
-//  xQueueSend(ptNetxRsc->tAppQueues->ledQueue, &tLedCmd, 10);
-//  xQueueSend(ptNetxRsc->tAppQueues->lcdQueue, &tLcdPacket, 10);
+  PRINTF("---------- NetX Error ----------" NEWLINE);
+  ptNetxRsc->fNetXDrvRunning = false;
 
-  if (ptNetxRsc->fNetXDrvRunning)
+  if(ptNetxRsc->lastState == State_NetxInit)
   {
-    ptNetxRsc->fNetXDrvRunning = false;
-    //CloseNetxChannels(ptNetxRsc);
+    HandleNetXError(ptNetxRsc, LCD_COMMAND_CONFIG_SCREEN, "Init...\n", LED_STATUS_CONFIG_ERROR,
+    true, State_NetxInit);
   }
-
-  if (ptNetxRsc->lastState == State_NetxInit)
+  else if(ptNetxRsc->bInitErrCounter >= 10)
   {
-    /* TODO: DeInitialize Toolkit and free memory */
-    NetX_AllChannels_Close(ptNetxRsc);
-    cifXTKitDeinit();
-
-    ptNetxRsc->currentState = State_NetxInit;
+    ptNetxRsc->bInitErrCounter = 0;
+    HandleNetXError(ptNetxRsc, LCD_COMMAND_ERROR_SCREEN, "Init...\n", LED_STATUS_CONFIG_ERROR,
+    true, State_NetxInit);
   }
   else
   {
-    /*TODO: reconfig real time ethernet ? */
-    ptNetxRsc->currentState = State_NetxPreOP;
+    HandleNetXError(ptNetxRsc, LCD_COMMAND_CONFIG_SCREEN, "Configuring...\n", LED_STATUS_CONFIG_BLINK,
+    false, State_NetxPreOP);
   }
+
   ptNetxRsc->lastState = State_NetxError;
+}
+
+void State_NetxSTOP(NetxRessource_t *ptNetxRsc)
+{
+  PRINTF("---------- NetX Stop ----------" NEWLINE);
 }
 
 /**

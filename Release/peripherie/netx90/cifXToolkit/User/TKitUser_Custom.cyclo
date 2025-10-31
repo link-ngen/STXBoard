@@ -1,0 +1,11 @@
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:47:5:USER_GetOSFile	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:62:10:USER_GetFirmwareFileCount	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:78:5:USER_GetFirmwareFile	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:93:10:USER_GetConfigurationFileCount	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:109:5:USER_GetConfigurationFile	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:121:6:USER_GetBootloaderFile	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:133:5:USER_GetWarmstartParameters	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:147:6:USER_GetAliasName	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:158:5:USER_GetInterruptEnable	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:168:5:USER_GetCachedIOBufferMode	1
+../peripherie/netx90/cifXToolkit/User/TKitUser_Custom.c:195:6:USER_Trace	2

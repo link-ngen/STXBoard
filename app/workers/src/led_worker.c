@@ -7,8 +7,6 @@
 
 
 #include "led_worker.h"
-#include "FreeRTOS.h"
-#include "queue.h"
 
 typedef void (*LedCommandHandler_t)(void);
 
@@ -40,6 +38,15 @@ static void Led_ErrorOn(void)
 {
   Led_EnableConfigError();
   Led_EnableError();
+}
+
+void LED_PutPacket(QueueHandle_t q, const LedTaskCommand_t *ptLedCmd)
+{
+  if(NULL == q || NULL == ptLedCmd)
+    return;
+
+  LedTaskCommand_t tTmp = *ptLedCmd;
+  xQueueOverwrite(q, &tTmp);
 }
 
 void LED_Worker(void* pvParameters)

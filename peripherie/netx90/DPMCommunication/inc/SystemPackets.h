@@ -33,4 +33,6 @@ void    SysPkt_HandleHardwareInfoCnf      (CIFX_PACKET* ptHardwareInfoCnf);
 
 void    SysPkt_PD0InTriggeredReq          (CIFX_PACKET* ptPkt);
 
+void    SysPkt_DeleteConfig               (CIFX_PACKET* ptPkt);
+
 #endif /* NETX90_DPMCOMMUNICATION_INC_SYSTEMPACKETS_H_ */

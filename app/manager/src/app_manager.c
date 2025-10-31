@@ -17,8 +17,8 @@ void app_init()
 
   FreeRTOS_THREAD_T taskConfigs[] = {
     { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)&tAppQueues, (tskIDLE_PRIORITY) + 2, NULL },
-    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 4, (void*)tAppQueues.lcdQueue, (tskIDLE_PRIORITY) + 1, NULL },
-    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 0, NULL },
+    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 4, (void*)tAppQueues.lcdQueue, (tskIDLE_PRIORITY) + 0, NULL },
+    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 1, NULL },
   };
 
   BaseType_t xReturned = pdPASS;

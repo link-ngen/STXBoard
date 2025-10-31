@@ -22,9 +22,9 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
   ptRsc->hCifXChannel = hCifXChannel;
   ptRsc->ptCifXChannelInfo = ptCifXChannelInfo;
 
-  if (Pkt_Init(&(ptRsc->hPktIfRsc), ptRsc->hCifXChannel))
+  if(Pkt_Init(&(ptRsc->hPktIfRsc), ptRsc->hCifXChannel))
   {
-      Pkt_RegisterPacketHandler(ptRsc->hPktIfRsc, PNS_PacketHandler, ptRsc);
+    Pkt_RegisterPacketHandler(ptRsc->hPktIfRsc, PNS_PacketHandler, ptRsc);
   }
 
 #ifdef HOST_APPLICATION_SETS_MAC_ADDRESS
@@ -54,7 +54,6 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
 #endif
 
   *phStackRsc = (NETX_COMM_CHANNEL_HANDLER_RSC_H)ptRsc;
-
   return ulRet;
 }
 
@@ -109,7 +108,7 @@ static void IO_UpdateCycleCounter( PNS_RESSOURCES_T* ptRsc )
   }
 }
 
-static void PNS_IOTask(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc)
+static int PNS_IOTask(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc)
 {
   PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*) hRsc;
 
@@ -118,31 +117,21 @@ static void PNS_IOTask(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc)
 
   /** INPUT DATA *********************************************************************/
   lRet = xChannelIORead(ptRsc->hCifXChannel, 0, 0, sizeof(ptRsc->tInputData), &ptRsc->tInputData, 0);
-  if(lRet != CIFX_NO_ERROR)
+  if(CIFX_NO_ERROR != lRet)
   {
     /** Something failed?
      * Reason for error could be:
      * 1) netX is not "ready" yet. May happen during startup.
      * 2) netX is not "running" yet. May happen during startup in case the netX is not fully configured yet.
      * 3) netX has not yet established an IO connection. */
+    return lRet;
   }
-  else
-  {
 
-  }
+  /* Process data... */
 
   /** OUTPUT DATA ***************************************/
-  /** update output data image to be sent in this cycle */
-
   lRet = xChannelIOWrite(ptRsc->hCifXChannel, 0, 0, sizeof(ptRsc->tOutputData), &ptRsc->tOutputData, 0);
-  if(lRet != CIFX_NO_ERROR)
-  {
-    /** Something failed?
-     * Reason for error could be:
-     * 1) netX is not "ready" yet. May happen during startup.
-     * 2) netX is not "running" yet. May happen during startup in case the netX is not fully configured yet.
-     * 3) netX has not yet established an IO connection. */
-  }
+  return lRet;
 }
 
 /**************************************************************************************
@@ -170,9 +159,11 @@ static void PNS_DeInitialize(NETX_COMM_CHANNEL_HANDLER_RSC_H phStackRsc, CIFXHAN
       return;
   }
 
+  SysPkt_DeleteConfig(&ptRsc->tPacket);
+  (void)Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &ptRsc->tPacket, TXRX_TIMEOUT);
+
   PRINTF("---------- Cleaning finished ----------" NEWLINE);
 }
-
 
 NETX_COMM_CHANNEL_HANDLER_T g_tRealtimeEthernetHandler =
 {

@@ -9,6 +9,8 @@
 #define WORKERS_INC_LED_WORKER_H_
 
 #include "led_func.h"
+#include "FreeRTOS.h"
+#include "queue.h"
 
 typedef enum {
   LED_STATUS_CONFIG_BLINK,
@@ -19,8 +21,9 @@ typedef enum {
   LED_STATUS_UNKNOWN
 } LedTaskCommand_t;
 
-#define LED_QUEUE_LEN 2
+#define LED_QUEUE_LEN 1
 
 void LED_Worker(void* pvParameters);
+void LED_PutPacket(QueueHandle_t q, const LedTaskCommand_t *ptLedCmd);
 
 #endif /* WORKERS_INC_LED_WORKER_H_ */

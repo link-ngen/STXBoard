@@ -1,0 +1,7 @@
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:142:13:Pkt_DispatchIndication	5
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:173:6:Pkt_Init	2
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:192:6:Pkt_Deinit	2
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:203:6:Pkt_RegisterPacketHandler	4
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:225:6:Pkt_CheckReceiveMailbox	2
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:239:10:Pkt_SendPacket	1
+../peripherie/netx90/DPMCommunication/src/PacketCommunication.c:250:10:Pkt_SendReceivePacket	7

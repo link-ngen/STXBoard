@@ -47,12 +47,16 @@ typedef struct NetxRessource_tag
   NETX_COMM_CHANNEL_T             atCommChannels[USED_COMMUNICATION_CHANNELS];
   BOARD_INFORMATION               tCifXBoardInfo;   /** netX Board information. Read during application start.  */
   bool                            fNetXDrvRunning;  /* netX driver is running */
+  uint8_t                         bInitErrCounter;
 
   /**< netx state function */
   NetxStateFunction_t             currentState;
   NetxStateFunction_t             lastState;
 
   AppQueues_t                     *tAppQueues;
+
+  LedTaskCommand_t                tLedCmd;
+  LcdPacket_T                     tLcdPacket;
 
 } NetxRessource_t;
 

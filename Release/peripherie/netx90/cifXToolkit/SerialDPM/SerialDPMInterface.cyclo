@@ -1,0 +1,9 @@
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:368:14:Write_NX51	1
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:313:14:Write_NX10	1
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:117:14:Write_NX50	2
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:57:14:Read_NX50	5
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:232:14:ReadModifyWrite_NX500	5
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:157:14:Read_NX500	6
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:286:14:Read_NX10	2
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:340:14:Read_NX51	1
+../peripherie/netx90/cifXToolkit/SerialDPM/SerialDPMInterface.c:392:5:SerialDPM_Init	11

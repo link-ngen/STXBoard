@@ -55,7 +55,7 @@ typedef int (*NetxComm_SetupCallback)(NETX_COMM_CHANNEL_HANDLER_RSC_H hCommChHdl
  *
  * \param phCommChHdlRsc     [in] Reference to the internal resources
  */
-typedef void (*NetxComm_CyclicTaskCallback)(NETX_COMM_CHANNEL_HANDLER_RSC_H hCommChHdlRsc);
+typedef int (*NetxComm_CyclicTaskCallback)(NETX_COMM_CHANNEL_HANDLER_RSC_H hCommChHdlRsc);
 
 /**
  * De-initialization of the communication channel.
