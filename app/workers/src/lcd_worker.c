@@ -16,7 +16,7 @@
 #define PI_180 0.0174532
 #define FULL_CIRCLE 360
 
-typedef void (*LCD_ScreenFunction_t)(LcdPacket_T*);
+typedef void (*LCD_ScreenFunction_t)(LcdPacket_t*);
 
 static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
     { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
@@ -126,21 +126,21 @@ static void DrawLoadingAnimation(uint8_t x0, uint8_t y0, uint8_t radius, uint32_
   }
 }
 
-static void ShowIdleScreen(LcdPacket_T* ptLcdPaket)
+static void ShowIdleScreen(LcdPacket_t* ptLcdPaket)
 {
   ssd1306_WriteString("Idle screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowBootScreen(LcdPacket_T* ptLcdPaket)
+static void ShowBootScreen(LcdPacket_t* ptLcdPaket)
 {
   ssd1306_WriteString("Boot screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowVertexScreen(LcdPacket_T* ptLcdPaket)
+static void ShowVertexScreen(LcdPacket_t* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   if(angle > FULL_CIRCLE)
@@ -163,32 +163,32 @@ static void ShowVertexScreen(LcdPacket_T* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-static void ShowConfigScreen(LcdPacket_T* ptLcdPaket)
+static void ShowConfigScreen(LcdPacket_t* ptLcdPaket)
 {
   ssd1306_WriteString("Checking config.\n", Font_6x8, White);
   DrawLoadingAnimation(originx, originy, 14, 8);
 }
 
-static void ShowIoExchangeScreen(LcdPacket_T* ptLcdPaket)
+static void ShowIoExchangeScreen(LcdPacket_t* ptLcdPaket)
 {
   ssd1306_WriteString("IO Exchange screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowErrorScreen(LcdPacket_T* ptLcdPaket)
+static void ShowErrorScreen(LcdPacket_t* ptLcdPaket)
 {
   ssd1306_WriteString("Error screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-void LCD_PutPacket(QueueHandle_t q, const LcdPacket_T *ptLcdPkt)
+void LCD_PutPacket(QueueHandle_t q, const LcdPacket_t *ptLcdPkt)
 {
   if(q == NULL || ptLcdPkt == NULL)
     return;
 
-  LcdPacket_T tTmp = *ptLcdPkt; /* local copy */
+  LcdPacket_t tTmp = *ptLcdPkt; /* local copy */
   xQueueOverwrite(q, &tTmp);
 }
 
@@ -202,48 +202,27 @@ void LCD_Worker(void *pvParameters)
       [LCD_COMMAND_ERROR_SCREEN]      = ShowErrorScreen,
       [LCD_COMMAND_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
-
   QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
-  LcdCmdScreen_t currentCommand  = LCD_COMMAND_IDLE_SCREEN;
-  LcdPacket_T lastPacket = { .tCmd = LCD_COMMAND_IDLE_SCREEN, .pcMessage = "" };
+  LcdPacket_t tLcdPacket;
 
   ssd1306_Init();
-
   while(1)
   {
-    LcdPacket_T tLcdPacketTemp;
-    BaseType_t queueResult;
-
-    if(currentCommand == LCD_COMMAND_VERTEX_SCREEN)
+    if(pdPASS == xQueueReceive(lcdQueue, &tLcdPacket, portMAX_DELAY))
     {
-      queueResult = xQueueReceive(lcdQueue, &tLcdPacketTemp, pdMS_TO_TICKS(1));
+      ssd1306_Fill(Black);
+      if(tLcdPacket.tCmd < LCD_COMMAND_UNKNOWN)
+      {
+        screenFunctions[tLcdPacket.tCmd](&tLcdPacket);
+      }
+      else
+      {
+        ssd1306_WriteString("Unknown command received. Defaulting to Idle Screen.", Font_6x8, White);
+        ShowIdleScreen(&tLcdPacket);
+      }
+      ssd1306_SetCursor(0, 0);
+      ssd1306_UpdateScreen();
+      vTaskDelay(pdMS_TO_TICKS(1));
     }
-    else
-    {
-      queueResult = xQueueReceive(lcdQueue, &tLcdPacketTemp, portMAX_DELAY);
-    }
-
-    if(queueResult == pdPASS)
-    {
-      lastPacket = tLcdPacketTemp;
-      currentCommand = lastPacket.tCmd;
-    }
-
-    ssd1306_Fill(Black);
-    if(lastPacket.tCmd < LCD_COMMAND_UNKNOWN)
-    {
-      screenFunctions[lastPacket.tCmd](&lastPacket);
-    }
-    else
-    {
-      ssd1306_WriteString("Unknown cmd recv. Idle Screen.", Font_6x8, White);
-      ShowIdleScreen(&lastPacket);
-      currentCommand = LCD_COMMAND_IDLE_SCREEN;
-    }
-
-    ssd1306_SetCursor(0, 0);
-    ssd1306_UpdateScreen();
-    vTaskDelay(pdMS_TO_TICKS(10));
   }
-
 }

@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+#include "pns_functions.h"
 #include "app_config.h"
 #include "app_manager.h"
 #include "netx_worker.h"
@@ -330,10 +331,13 @@ void State_NetxPreOP(NetxRessource_t *ptNetxRsc)
   else
   {
     /* config done */
+    PNS_RESSOURCES_T *ptPnsRsc = (PNS_RESSOURCES_T*)(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
+    ptNetxRsc->bInitErrCounter = 0;
     ptNetxRsc->fNetXDrvRunning = true;
     ptNetxRsc->tLedCmd = LED_STATUS_RUN_ON;
     ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_VERTEX_SCREEN;
     snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "\n");
+    ptNetxRsc->tLcdPacket.usRotationAngle = &ptPnsRsc->tInputData.usRotationAngle_Input;
     ptNetxRsc->currentState = State_NetxOP;
   }
 
@@ -346,16 +350,22 @@ void State_NetxOP(NetxRessource_t *ptNetxRsc)
 {
   PRINTF("---------- NetX OP ----------" NEWLINE);
   static int32_t lRet = CIFX_NO_ERROR;
+  //PNS_RESSOURCES_T *ptPnsRsc = (PNS_RESSOURCES_T*)(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
 
   /* TODO: prepare the data to io struct object */
   /* TODO: send command to neopixels */
   if (NULL != ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask)
   {
     lRet = ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
-    if ((CIFX_DEV_NO_COM_FLAG == lRet) || /* ignore (not in communication) */
-       (CIFX_NO_ERROR == lRet))
+    if (CIFX_NO_ERROR == lRet)
     {
-
+      ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_IOXCHANGE_SCREEN;
+      LCD_PutPacket(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
+    }
+    else if (CIFX_DEV_NO_COM_FLAG == lRet)
+    {
+      ptNetxRsc->tLcdPacket.tCmd = LCD_COMMAND_VERTEX_SCREEN;
+      LCD_PutPacket(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
     }
     else if (CIFX_DEV_EXCHANGE_FAILED == lRet)
     {
@@ -373,7 +383,7 @@ void State_NetxOP(NetxRessource_t *ptNetxRsc)
     }
   }
   ptNetxRsc->lastState = State_NetxOP;
-  vTaskDelay(1);
+  vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 void State_NetxError(NetxRessource_t *ptNetxRsc)
@@ -381,23 +391,25 @@ void State_NetxError(NetxRessource_t *ptNetxRsc)
   PRINTF("---------- NetX Error ----------" NEWLINE);
   ptNetxRsc->fNetXDrvRunning = false;
 
-  if(ptNetxRsc->lastState == State_NetxInit)
+  if(ptNetxRsc->lastState == State_NetxInit ||
+    ptNetxRsc->bInitErrCounter >= 10)
   {
-    HandleNetXError(ptNetxRsc, LCD_COMMAND_CONFIG_SCREEN, "Init...\n", LED_STATUS_CONFIG_ERROR,
-    true, State_NetxInit);
-  }
-  else if(ptNetxRsc->bInitErrCounter >= 10)
-  {
-    ptNetxRsc->bInitErrCounter = 0;
-    HandleNetXError(ptNetxRsc, LCD_COMMAND_ERROR_SCREEN, "Init...\n", LED_STATUS_CONFIG_ERROR,
-    true, State_NetxInit);
+    HandleNetXError(ptNetxRsc,
+                    LCD_COMMAND_CONFIG_SCREEN,
+                    "Init...\n",
+                    LED_STATUS_CONFIG_ERROR,
+                    true,
+                    State_NetxInit);
   }
   else
   {
-    HandleNetXError(ptNetxRsc, LCD_COMMAND_CONFIG_SCREEN, "Configuring...\n", LED_STATUS_CONFIG_BLINK,
-    false, State_NetxPreOP);
+    HandleNetXError(ptNetxRsc,
+                    LCD_COMMAND_CONFIG_SCREEN,
+                    "Configuring...\n",
+                    LED_STATUS_CONFIG_BLINK,
+                    false,
+                    State_NetxPreOP);
   }
-
   ptNetxRsc->lastState = State_NetxError;
 }
 

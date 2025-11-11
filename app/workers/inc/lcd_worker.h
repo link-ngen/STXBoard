@@ -22,16 +22,17 @@ typedef enum {
   LCD_COMMAND_UNKNOWN
 } LcdCmdScreen_t;
 
-typedef struct LcdPacket_Ttag LcdPacket_T;
-struct LcdPacket_Ttag
-{
+typedef struct {
   LcdCmdScreen_t tCmd;
+  uint16_t* usRotationAngle;
   char pcMessage[32];
-};
+} LcdPacket_t;
 
-#define LCD_QUEUE_LEN 1
+#define LCD_STATUS_QUEUE_LEN  1
+#define LCD_DATA_QUEUE_LEN    5
+
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
-void LCD_PutPacket(QueueHandle_t q, const LcdPacket_T *ptLcdPkt);
+void LCD_PutPacket(QueueHandle_t q, const LcdPacket_t *ptLcdPkt);
 
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

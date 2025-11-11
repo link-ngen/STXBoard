@@ -5,7 +5,6 @@
  *      Author: progr
  */
 
-
 #include "led_worker.h"
 
 typedef void (*LedCommandHandler_t)(void);
