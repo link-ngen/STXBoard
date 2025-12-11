@@ -213,7 +213,8 @@ bool LCD_SendCommandWait(QueueHandle_t xQueue, const LcdCommand_t *ptCommand,
                          TickType_t xTicksToWait)
 {
     if(xQueue == NULL || ptCommand == NULL ||
-       ptCommand->eScreen >= LCD_SCREEN_COUNT) {
+       ptCommand->eScreen >= LCD_SCREEN_COUNT)
+    {
         return false;
     }
 

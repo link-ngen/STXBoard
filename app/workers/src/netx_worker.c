@@ -119,7 +119,6 @@ static int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
 }
 
 static void NetX_AllChannels_Close(NetxRessource_t* ptNetxData);
-
 static void HandleNetXError(NetxRessource_t *ptNetxRsc, LcdScreen_t lcdCmd, const char *msg, LedTaskCommand_t ledCmd,
 bool resetDriver, NetxStateFunction_t nextState)
 {

@@ -8,6 +8,7 @@
 #ifndef WORKERS_INC_LCD_WORKER_H_
 #define WORKERS_INC_LCD_WORKER_H_
 
+#include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"

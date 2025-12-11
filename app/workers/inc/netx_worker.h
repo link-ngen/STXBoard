@@ -60,24 +60,6 @@ typedef struct NetxRessource_tag
 
 } NetxRessource_t;
 
-typedef enum
-{
-  NETX_STATE_INIT,
-  NETX_STATE_PRE_OP,
-  NETX_STATE_OP,
-  NETX_STATE_ERROR,
-  NETX_STATE_STOP,
-  NETX_STATE_COUNT
-} NetxState_t;
-
-typedef struct
-{
-  NetxState_t eState;
-  void (*pfnHandler)(NetxRessource_t*);
-  LedTaskCommand_t eDefaultLedCmd;
-  LcdScreen_t eDefaultLcdScreen;
-} NetxStateHandler_t;
-
 void NetxWorker(void *pvParameters);
 
 #endif /* WORKERS_INC_NETX_WORKER_H_ */
