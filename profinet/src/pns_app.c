@@ -66,9 +66,16 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
 **************************************************************************************/
 static int PNS_Setup(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc )
 {
+  uint32_t lRet = CIFX_NO_ERROR;
   PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)hRsc;
   /* Download the configuration */
-  return PNS_ConfigureStack( ptRsc );
+  lRet = PNS_ConfigureStack( ptRsc );
+  if (CIFX_NO_ERROR == lRet)
+  {
+    ptRsc->fDeviceIsRunning = true;
+  }
+
+  return lRet;
 }
 
 

@@ -45,6 +45,7 @@
 "./peripherie/lcd/src/ssd1306_fonts.o"
 "./peripherie/lcd/src/ssd1306_gfx.o"
 "./peripherie/led/src/led_func.o"
+"./peripherie/neopixel/src/neopixel.o"
 "./peripherie/netx90/DPMCommunication/src/PacketCommunication.o"
 "./peripherie/netx90/DPMCommunication/src/SystemPackets.o"
 "./peripherie/netx90/cifXToolkit/OSAbstraction/OS_Custom.o"

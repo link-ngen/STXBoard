@@ -32,6 +32,7 @@ app/manager/src \
 app/workers/src \
 peripherie/lcd/src \
 peripherie/led/src \
+peripherie/neopixel/src \
 peripherie/netx90/DPMCommunication/src \
 peripherie/netx90/cifXToolkit/OSAbstraction \
 peripherie/netx90/cifXToolkit/SerialDPM \

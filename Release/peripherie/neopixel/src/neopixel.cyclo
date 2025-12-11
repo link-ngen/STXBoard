@@ -1,0 +1,13 @@
+../peripherie/neopixel/src/neopixel.c:23:13:DMA_Callback	1
+../peripherie/neopixel/src/neopixel.c:68:6:Neopxl_Init	3
+../peripherie/neopixel/src/neopixel.c:75:6:Neopxl_Refresh	6
+../peripherie/neopixel/src/neopixel.c:85:6:Neopxl_Clear	2
+../peripherie/neopixel/src/neopixel.c:98:6:Neopxl_RGB2HSV	6
+../peripherie/neopixel/src/neopixel.c:149:6:Neopxl_One_RGB	3
+../peripherie/neopixel/src/neopixel.c:162:6:Neopxl_All_RGB	3
+../peripherie/neopixel/src/neopixel.c:174:6:Neopxl_One_HSV	3
+../peripherie/neopixel/src/neopixel.c:191:6:Neopxl_All_HSV	3
+../peripherie/neopixel/src/neopixel.c:208:6:Neopxl_Shift_Left	2
+../peripherie/neopixel/src/neopixel.c:228:6:Neopxl_Shift_Right	2
+../peripherie/neopixel/src/neopixel.c:248:6:Neopxl_Rotate_Left	2
+../peripherie/neopixel/src/neopixel.c:270:6:Neopxl_Rotate_Right	2

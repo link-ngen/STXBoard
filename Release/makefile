@@ -15,6 +15,7 @@ RM := rm -rf
 -include peripherie/netx90/cifXToolkit/SerialDPM/subdir.mk
 -include peripherie/netx90/cifXToolkit/OSAbstraction/subdir.mk
 -include peripherie/netx90/DPMCommunication/src/subdir.mk
+-include peripherie/neopixel/src/subdir.mk
 -include peripherie/led/src/subdir.mk
 -include peripherie/lcd/src/subdir.mk
 -include app/workers/src/subdir.mk
@@ -73,8 +74,8 @@ all: main-build
 main-build: STXBoard.elf secondary-outputs
 
 # Tool invocations
-STXBoard.elf STXBoard.map: $(OBJS) $(USER_OBJS) C:\Users\nnguyen\Projects\stm32\STXBoard\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "STXBoard.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\nnguyen\Projects\stm32\STXBoard\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STXBoard.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+STXBoard.elf STXBoard.map: $(OBJS) $(USER_OBJS) C:\Projekte\stm32\STXBoard\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "STXBoard.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Projekte\stm32\STXBoard\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STXBoard.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
