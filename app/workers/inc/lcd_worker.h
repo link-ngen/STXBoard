@@ -21,17 +21,10 @@ typedef enum {
   LCD_VERTEX_SCREEN,    /* screen like rotate octahedron  */
   LCD_ERROR_SCREEN,     /* screen error */
   LCD_SCREEN_COUNT
-<<<<<<< HEAD
-} LcdScreen_t;
-
-typedef struct {
-  LcdScreen_t eScreen;
-=======
 } eLcdScreen;
 
 typedef struct {
   eLcdScreen eScreen;
->>>>>>> bugfix-from-old-commit
   char pcMessage[32];
   void* pvCustomData;
 } LcdCommand_t;
@@ -41,11 +34,6 @@ typedef struct {
 
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
-<<<<<<< HEAD
-bool LCD_SendCommand(QueueHandle_t xQueue, const LcdCommand_t *ptCommand);
-bool LCD_SendCommandWait(QueueHandle_t xQueue, const LcdCommand_t *ptCommand, TickType_t xTicksToWait);
-=======
 bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand);
 
->>>>>>> bugfix-from-old-commit
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

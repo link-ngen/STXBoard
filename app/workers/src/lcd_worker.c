@@ -183,44 +183,6 @@ static void ShowErrorScreen(LcdCommand_t* ptLcdPaket)
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-<<<<<<< HEAD
-bool LCD_SendCommand(QueueHandle_t xQueue, const LcdCommand_t *ptCommand)
-{
-//  if(q == NULL || ptLcdPkt == NULL)
-//    return;
-//
-//  LcdCommand_t tTmp = *ptLcdPkt; /* local copy */
-//  xQueueOverwrite(q, &tTmp);
-
-  if(xQueue == NULL || ptCommand == NULL ||
-    ptCommand->eScreen >= LCD_SCREEN_COUNT)
-  {
-    return false;
-  }
-
-  /* Non-blocking send with Overwrite-Fallback */
-  if(xQueueSend(xQueue, ptCommand, 0) != pdPASS)
-  {
-    /* Queue is full - remove oldest element */
-    LcdCommand_t tDummy;
-    xQueueReceive(xQueue, &tDummy, 0);
-    return (xQueueSend(xQueue, ptCommand, 0) == pdPASS);
-  }
-
-  return true;
-}
-
-bool LCD_SendCommandWait(QueueHandle_t xQueue, const LcdCommand_t *ptCommand,
-                         TickType_t xTicksToWait)
-{
-    if(xQueue == NULL || ptCommand == NULL ||
-       ptCommand->eScreen >= LCD_SCREEN_COUNT)
-    {
-        return false;
-    }
-
-    return (xQueueSend(xQueue, ptCommand, xTicksToWait) == pdPASS);
-=======
 bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand)
 {
   if(q == NULL || ptCommand == NULL ||
@@ -230,7 +192,6 @@ bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand)
   LcdCommand_t tTmp = *ptCommand; /* local copy */
   xQueueOverwrite(q, &tTmp);
   return true;
->>>>>>> bugfix-from-old-commit
 }
 
 void LCD_Worker(void *pvParameters)
@@ -244,11 +205,7 @@ void LCD_Worker(void *pvParameters)
       [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
   QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
-<<<<<<< HEAD
-  LcdCommand_t tLcdPacket;
-=======
   LcdCommand_t tLcdPacket = { 0 };
->>>>>>> bugfix-from-old-commit
 
   ssd1306_Init();
   while(1)
