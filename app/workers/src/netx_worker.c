@@ -367,14 +367,16 @@ void State_NetxOP(NetxRessource_t *ptNetxRsc)
   static int32_t lRet = CIFX_NO_ERROR;
   //PNS_RESSOURCES_T *ptPnsRsc = (PNS_RESSOURCES_T*)(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
 
-  /* TODO: prepare the data to io struct object */
-  /* TODO: send command to neopixels */
   if (NULL != ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask)
   {
     lRet = ptNetxRsc->atCommChannels[0].tCommChannelHandler.pfnCyclicTask(ptNetxRsc->atCommChannels[0].hCommChannelRsc);
     if (CIFX_NO_ERROR == lRet)
     {
       ptNetxRsc->tLcdPacket.eScreen = LCD_IOXCHANGE_SCREEN;
+
+      /* Process input data and prepare for the next write to the fieldbus */
+      // TODO: process io data. Send input data to other Task and get the output data from other task
+
       LCD_SendCommand(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
     }
     else if (CIFX_DEV_NO_COM_FLAG == lRet)
@@ -442,9 +444,9 @@ void State_NetxSTOP(NetxRessource_t *ptNetxRsc)
 
 void NetxWorker(void *pvParameters)
 {
-  tNetxFSM.currentState = State_NetxInit;
-  tNetxFSM.lastState = NULL;
-  tNetxFSM.tAppQueues = (AppQueues_t *)pvParameters;
+  tNetxFSM.currentState   = State_NetxInit;
+  tNetxFSM.lastState      = NULL;
+  tNetxFSM.tAppQueues     = (AppQueues_t *)pvParameters;
 
   while (1)
   {

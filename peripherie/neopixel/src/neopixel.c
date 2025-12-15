@@ -22,7 +22,7 @@ static void Neopxl_InitLUT(void)
 
 static void DMA_Callback(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
-  ptNpxlRsc->bDmaReady = 1;
+  ptNpxlRsc->fDmaReady = 1;
 }
 
 /**
@@ -61,20 +61,20 @@ static void calcBuf(NEOPXL_RESSOURCE_T* ptNpxlRsc)
  */
 static void startDMA(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
+  ptNpxlRsc->fDmaReady = 0;
 	HAL_TIM_PWM_Start_DMA(ptNpxlRsc->ptTim, ptNpxlRsc->ulTimChannel, (uint32_t *)ptNpxlRsc->usaTimBuf, NEOPXL_TIM_BUFLEN);
-  ptNpxlRsc->bDmaReady = 0;
 }
 
 void Neopxl_Init(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
   Neopxl_InitLUT();
-  ptNpxlRsc->bDmaReady = 1;
+  ptNpxlRsc->fDmaReady = 1;
   ptNpxlRsc->pfDmaCallback = DMA_Callback;
 }
 
 void Neopxl_Refresh(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
-	while(!ptNpxlRsc->bDmaReady);
+	while(!ptNpxlRsc->fDmaReady);
 	calcBuf(ptNpxlRsc);
 	startDMA(ptNpxlRsc);
 }

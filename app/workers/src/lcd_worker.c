@@ -11,6 +11,7 @@
 #include "lcd_worker.h"
 #include "app_manager.h"
 #include "ssd1306.h"
+#include "ssd1306_gfx.h"
 #include "OS_Dependent.h"
 
 #define PI_180 0.0174532
@@ -30,6 +31,9 @@ uint32_t stime, fps, frames;
 char string_fps[3];
 int16_t angle;
 
+/* Bouncing ball data */
+uint8_t u8x = 10, u8y = 10;
+int8_t s8speedx = 2, s8speedy = 2;
 
 static void drawOctahedron(void)
 {
@@ -142,7 +146,6 @@ static void ShowBootScreen(LcdCommand_t* ptLcdPaket)
 
 static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
 {
-  ssd1306_Fill(Black);
   if(angle > FULL_CIRCLE)
   {
     angle = 0;
@@ -161,6 +164,19 @@ static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
   ssd1306_WriteString(string_fps, Font_6x8, White);
   ssd1306_WriteString(" fps", Font_6x8, White);
   ssd1306_UpdateScreen();
+}
+
+static void ShowBouncingBallScreen(LcdCommand_t *ptLcdPaket)
+{
+  ssd1306_GFX_FillCircle(u8x, u8y, 3, White);
+  u8x += s8speedx;
+  u8y += s8speedy;
+
+  // Bounce from edges
+  if(u8x <= 5 || u8x >= SSD1306_WIDTH - 5)
+    s8speedx = -s8speedx;
+  if(u8y <= 5 || u8y >= SSD1306_HEIGHT - 5)
+    s8speedy = -s8speedy;
 }
 
 static void ShowConfigScreen(LcdCommand_t* ptLcdPaket)
@@ -200,7 +216,7 @@ void LCD_Worker(void *pvParameters)
       [LCD_IDLE_SCREEN]       = ShowIdleScreen,
       [LCD_BOOT_SCREEN]       = ShowBootScreen,
       [LCD_CONFIG_SCREEN]     = ShowConfigScreen,
-      [LCD_VERTEX_SCREEN]     = ShowVertexScreen,
+      [LCD_VERTEX_SCREEN]     = ShowBouncingBallScreen, //ShowVertexScreen,
       [LCD_ERROR_SCREEN]      = ShowErrorScreen,
       [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
@@ -224,7 +240,7 @@ void LCD_Worker(void *pvParameters)
       }
       ssd1306_SetCursor(0, 0);
       ssd1306_UpdateScreen();
-      vTaskDelay(pdMS_TO_TICKS(1));
+      vTaskDelay(pdMS_TO_TICKS(10));
     }
   }
 }

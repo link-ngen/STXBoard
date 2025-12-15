@@ -42,7 +42,7 @@ typedef struct {
 typedef struct NEOPXL_RESSOURCE_Ttag {
   TIM_HandleTypeDef *ptTim;
   uint32_t ulTimChannel;
-  __IO uint8_t bDmaReady;
+  __IO uint8_t fDmaReady;
   uint16_t usaTimBuf[NEOPXL_TIM_BUFLEN];
   NEOPXL_RGB_T tLedBuf[NEOPXL_NUM_LEDS];
   void (*pfDmaCallback)(struct NEOPXL_RESSOURCE_Ttag *pNpxlRsc);
