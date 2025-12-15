@@ -12,8 +12,8 @@ AppQueues_t tAppQueues;
 
 void app_init()
 {
-  tAppQueues.lcdQueue = xQueueCreate(LCD_STATUS_QUEUE_LEN, sizeof(LcdPacket_t));
-  tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(LedTaskCommand_t));
+  tAppQueues.lcdQueue = xQueueCreate(LCD_STATUS_QUEUE_LEN, sizeof(LcdCommand_t));
+  tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
 
   FreeRTOS_THREAD_T taskConfigs[] = {
     { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)&tAppQueues, (tskIDLE_PRIORITY) + 2, NULL },

@@ -55,8 +55,8 @@ typedef struct NetxRessource_tag
 
   AppQueues_t                     *tAppQueues;
 
-  LedTaskCommand_t                tLedCmd;
-  LcdPacket_t                     tLcdPacket;
+  eLedCommand                tLedCmd;
+  LcdCommand_t                     tLcdPacket;
 
 } NetxRessource_t;
 

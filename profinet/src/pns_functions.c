@@ -374,6 +374,8 @@ uint32_t  PNS_ConfigureStack(PNS_RESSOURCES_T* ptRsc)
   if(SUCCESS_HIL_OK != ptRsc->tPacket.tHeader.ulState)
     return ptRsc->tPacket.tHeader.ulState;
 
+
+  ptRsc->fDeviceIsRunning = true;
   return CIFX_NO_ERROR;
 }
 

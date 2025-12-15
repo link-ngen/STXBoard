@@ -16,7 +16,7 @@
 #define PI_180 0.0174532
 #define FULL_CIRCLE 360
 
-typedef void (*LCD_ScreenFunction_t)(LcdPacket_t*);
+typedef void (*LCD_ScreenFunction_t)(LcdCommand_t*);
 
 static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
     { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
@@ -126,21 +126,21 @@ static void DrawLoadingAnimation(uint8_t x0, uint8_t y0, uint8_t radius, uint32_
   }
 }
 
-static void ShowIdleScreen(LcdPacket_t* ptLcdPaket)
+static void ShowIdleScreen(LcdCommand_t* ptLcdPaket)
 {
   ssd1306_WriteString("Idle screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowBootScreen(LcdPacket_t* ptLcdPaket)
+static void ShowBootScreen(LcdCommand_t* ptLcdPaket)
 {
   ssd1306_WriteString("Boot screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowVertexScreen(LcdPacket_t* ptLcdPaket)
+static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   if(angle > FULL_CIRCLE)
@@ -163,47 +163,49 @@ static void ShowVertexScreen(LcdPacket_t* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-static void ShowConfigScreen(LcdPacket_t* ptLcdPaket)
+static void ShowConfigScreen(LcdCommand_t* ptLcdPaket)
 {
   ssd1306_WriteString("Checking config.\n", Font_6x8, White);
   DrawLoadingAnimation(originx, originy, 14, 8);
 }
 
-static void ShowIoExchangeScreen(LcdPacket_t* ptLcdPaket)
+static void ShowIoExchangeScreen(LcdCommand_t* ptLcdPaket)
 {
   ssd1306_WriteString("IO Exchange screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-static void ShowErrorScreen(LcdPacket_t* ptLcdPaket)
+static void ShowErrorScreen(LcdCommand_t* ptLcdPaket)
 {
   ssd1306_WriteString("Error screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
-void LCD_PutPacket(QueueHandle_t q, const LcdPacket_t *ptLcdPkt)
+bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand)
 {
-  if(q == NULL || ptLcdPkt == NULL)
-    return;
+  if(q == NULL || ptCommand == NULL ||
+    ptCommand->eScreen >= LCD_SCREEN_COUNT)
+    return false;
 
-  LcdPacket_t tTmp = *ptLcdPkt; /* local copy */
+  LcdCommand_t tTmp = *ptCommand; /* local copy */
   xQueueOverwrite(q, &tTmp);
+  return true;
 }
 
 void LCD_Worker(void *pvParameters)
 {
   LCD_ScreenFunction_t screenFunctions[] = {
-      [LCD_COMMAND_IDLE_SCREEN]       = ShowIdleScreen,
-      [LCD_COMMAND_BOOT_SCREEN]       = ShowBootScreen,
-      [LCD_COMMAND_CONFIG_SCREEN]     = ShowConfigScreen,
-      [LCD_COMMAND_VERTEX_SCREEN]     = ShowVertexScreen,
-      [LCD_COMMAND_ERROR_SCREEN]      = ShowErrorScreen,
-      [LCD_COMMAND_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
+      [LCD_IDLE_SCREEN]       = ShowIdleScreen,
+      [LCD_BOOT_SCREEN]       = ShowBootScreen,
+      [LCD_CONFIG_SCREEN]     = ShowConfigScreen,
+      [LCD_VERTEX_SCREEN]     = ShowVertexScreen,
+      [LCD_ERROR_SCREEN]      = ShowErrorScreen,
+      [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
   QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
-  LcdPacket_t tLcdPacket;
+  LcdCommand_t tLcdPacket = { 0 };
 
   ssd1306_Init();
   while(1)
@@ -211,13 +213,13 @@ void LCD_Worker(void *pvParameters)
     if(pdPASS == xQueueReceive(lcdQueue, &tLcdPacket, portMAX_DELAY))
     {
       ssd1306_Fill(Black);
-      if(tLcdPacket.tCmd < LCD_COMMAND_UNKNOWN)
+      if(tLcdPacket.eScreen < LCD_SCREEN_COUNT)
       {
-        screenFunctions[tLcdPacket.tCmd](&tLcdPacket);
+        screenFunctions[tLcdPacket.eScreen](&tLcdPacket);
       }
       else
       {
-        ssd1306_WriteString("Unknown command received. Defaulting to Idle Screen.", Font_6x8, White);
+        ssd1306_WriteString("Unknown CMD received.", Font_6x8, White);
         ShowIdleScreen(&tLcdPacket);
       }
       ssd1306_SetCursor(0, 0);
