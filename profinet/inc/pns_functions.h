@@ -78,7 +78,7 @@ typedef struct PNS_RESSOURCES_Ttag
   PKT_INTERFACE_H       hPktIfRsc;
   CIFX_PACKET           tPacket;
 
-  bool                  fDeviceIsRunning;
+  bool                  fDeviceIsRunning; /* device was configured */
 
   PROCESS_DATA_INPUT_T  tInputData;  /** Consumed process data. Data that is received from the PLC. */
   PROCESS_DATA_OUTPUT_T tOutputData; /** Produced process data. Data that is sent to the PLC.       */

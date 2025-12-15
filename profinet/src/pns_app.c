@@ -21,6 +21,7 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
   PNS_RESSOURCES_T *ptRsc = &s_tPnsRsc;
   ptRsc->hCifXChannel = hCifXChannel;
   ptRsc->ptCifXChannelInfo = ptCifXChannelInfo;
+  ptRsc->fDeviceIsRunning = false;
 
   if(Pkt_Init(&(ptRsc->hPktIfRsc), ptRsc->hCifXChannel))
   {

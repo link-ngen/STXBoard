@@ -13,7 +13,7 @@ static void Led_ConfigBlink(void)
 {
   Led_ToggleConfigRun();
   Led_DisableError();
-  vTaskDelay(127);
+  vTaskDelay(pdMS_TO_TICKS(127));
 }
 
 static void Led_RunOn(void)
@@ -39,33 +39,35 @@ static void Led_ErrorOn(void)
   Led_EnableError();
 }
 
-void LED_PutPacket(QueueHandle_t q, const LedTaskCommand_t *ptLedCmd)
+bool LED_SendCommand(QueueHandle_t q, const eLedCommand *ptLedCmd)
 {
-  if(NULL == q || NULL == ptLedCmd)
-    return;
+  if(NULL == q || NULL == ptLedCmd ||
+    *ptLedCmd >= LED_CMD_COUNT)
+    return false;
 
-  LedTaskCommand_t tTmp = *ptLedCmd;
+  eLedCommand tTmp = *ptLedCmd;
   xQueueOverwrite(q, &tTmp);
+  return true;
 }
 
 void LED_Worker(void* pvParameters)
 {
   LedCommandHandler_t ledCommandHandlers[] = {
-      [LED_STATUS_CONFIG_BLINK]   = Led_ConfigBlink,
-      [LED_STATUS_RUN_ON]         = Led_RunOn,
-      [LED_STATUS_CONFIG_ERROR]   = Led_ConfigError,
-      [LED_STATUS_ERROR_OFF]      = Led_ErrorOff,
-      [LED_STATUS_ERROR_ON]       = Led_ErrorOn
+      [LED_CMD_CONFIG_BLINK]   = Led_ConfigBlink,
+      [LED_CMD_RUN_ON]         = Led_RunOn,
+      [LED_CMD_CONFIG_ERROR]   = Led_ConfigError,
+      [LED_CMD_ERROR_OFF]      = Led_ErrorOff,
+      [LED_CMD_ERROR_ON]       = Led_ErrorOn
   };
 
   QueueHandle_t pxQueue = (QueueHandle_t)pvParameters;
-  LedTaskCommand_t tCmd;
+  eLedCommand tCmd;
 
   while (1)
   {
     if(xQueueReceive(pxQueue, &tCmd, portMAX_DELAY) == pdPASS)
     {
-      if(tCmd < LED_STATUS_UNKNOWN)
+      if(tCmd < LED_CMD_COUNT)
       {
         ledCommandHandlers[tCmd]();
       }

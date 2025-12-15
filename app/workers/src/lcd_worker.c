@@ -183,6 +183,7 @@ static void ShowErrorScreen(LcdCommand_t* ptLcdPaket)
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
 }
 
+<<<<<<< HEAD
 bool LCD_SendCommand(QueueHandle_t xQueue, const LcdCommand_t *ptCommand)
 {
 //  if(q == NULL || ptLcdPkt == NULL)
@@ -219,6 +220,17 @@ bool LCD_SendCommandWait(QueueHandle_t xQueue, const LcdCommand_t *ptCommand,
     }
 
     return (xQueueSend(xQueue, ptCommand, xTicksToWait) == pdPASS);
+=======
+bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand)
+{
+  if(q == NULL || ptCommand == NULL ||
+    ptCommand->eScreen >= LCD_SCREEN_COUNT)
+    return false;
+
+  LcdCommand_t tTmp = *ptCommand; /* local copy */
+  xQueueOverwrite(q, &tTmp);
+  return true;
+>>>>>>> bugfix-from-old-commit
 }
 
 void LCD_Worker(void *pvParameters)
@@ -232,7 +244,11 @@ void LCD_Worker(void *pvParameters)
       [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
   QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
+<<<<<<< HEAD
   LcdCommand_t tLcdPacket;
+=======
+  LcdCommand_t tLcdPacket = { 0 };
+>>>>>>> bugfix-from-old-commit
 
   ssd1306_Init();
   while(1)
@@ -246,7 +262,7 @@ void LCD_Worker(void *pvParameters)
       }
       else
       {
-        ssd1306_WriteString("Unknown command received. Defaulting to Idle Screen.", Font_6x8, White);
+        ssd1306_WriteString("Unknown CMD received.", Font_6x8, White);
         ShowIdleScreen(&tLcdPacket);
       }
       ssd1306_SetCursor(0, 0);
