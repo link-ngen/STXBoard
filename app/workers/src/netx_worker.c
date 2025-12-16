@@ -338,7 +338,7 @@ void State_NetxPreOP(NetxRessource_t *ptNetxRsc)
       //ptNetxRsc->bInitErrCounter = 0;
       ptNetxRsc->fNetXDrvRunning = true;
       ptNetxRsc->tLedCmd = LED_CMD_RUN_ON;
-      ptNetxRsc->tLcdPacket.eScreen = LCD_VERTEX_SCREEN;
+      ptNetxRsc->tLcdPacket.eScreen = LCD_IOXCHANGE_SCREEN;
       snprintf(ptNetxRsc->tLcdPacket.pcMessage, sizeof(ptNetxRsc->tLcdPacket.pcMessage), "\n");
       ptNetxRsc->currentState = State_NetxOP;
     }
@@ -349,9 +349,9 @@ void State_NetxPreOP(NetxRessource_t *ptNetxRsc)
   else
   {
     /*TODO: How to check that a connection has been established? */
-    ptNetxRsc->tLedCmd = LED_CMD_CONFIG_ERROR;
-    ptNetxRsc->tLcdPacket.eScreen = LCD_VERTEX_SCREEN;
-    ptNetxRsc->currentState = State_NetxPreOP;
+//    ptNetxRsc->tLedCmd = LED_CMD_CONFIG_ERROR;
+//    ptNetxRsc->tLcdPacket.eScreen = LCD_VERTEX_SCREEN;
+//    ptNetxRsc->currentState = State_NetxPreOP;
 
     LED_SendCommand(ptNetxRsc->tAppQueues->ledQueue, &ptNetxRsc->tLedCmd);
     LCD_SendCommand(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
@@ -381,7 +381,9 @@ void State_NetxOP(NetxRessource_t *ptNetxRsc)
     }
     else if (CIFX_DEV_NO_COM_FLAG == lRet)
     {
+      ptNetxRsc->tLedCmd = LED_CMD_CONFIG_ERROR;
       ptNetxRsc->tLcdPacket.eScreen = LCD_VERTEX_SCREEN;
+      LED_SendCommand(ptNetxRsc->tAppQueues->ledQueue, &ptNetxRsc->tLedCmd);
       LCD_SendCommand(ptNetxRsc->tAppQueues->lcdQueue, &ptNetxRsc->tLcdPacket);
       ptNetxRsc->currentState = State_NetxPreOP;
     }

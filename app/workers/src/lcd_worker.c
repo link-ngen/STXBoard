@@ -14,7 +14,7 @@
 #include "ssd1306_gfx.h"
 #include "OS_Dependent.h"
 
-#define PI_180 0.0174532
+#define PI_180      0.0174532
 #define FULL_CIRCLE 360
 
 typedef void (*LCD_ScreenFunction_t)(LcdCommand_t*);
@@ -163,7 +163,6 @@ static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
   sprintf(string_fps, "%d", (int)(fps / frames));
   ssd1306_WriteString(string_fps, Font_6x8, White);
   ssd1306_WriteString(" fps", Font_6x8, White);
-  ssd1306_UpdateScreen();
 }
 
 static void ShowBouncingBallScreen(LcdCommand_t *ptLcdPaket)
@@ -203,7 +202,9 @@ bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand)
 {
   if(q == NULL || ptCommand == NULL ||
     ptCommand->eScreen >= LCD_SCREEN_COUNT)
+  {
     return false;
+  }
 
   LcdCommand_t tTmp = *ptCommand; /* local copy */
   xQueueOverwrite(q, &tTmp);
@@ -216,7 +217,7 @@ void LCD_Worker(void *pvParameters)
       [LCD_IDLE_SCREEN]       = ShowIdleScreen,
       [LCD_BOOT_SCREEN]       = ShowBootScreen,
       [LCD_CONFIG_SCREEN]     = ShowConfigScreen,
-      [LCD_VERTEX_SCREEN]     = ShowBouncingBallScreen, //ShowVertexScreen,
+      [LCD_VERTEX_SCREEN]     = ShowBouncingBallScreen, //,
       [LCD_ERROR_SCREEN]      = ShowErrorScreen,
       [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
