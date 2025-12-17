@@ -12,9 +12,10 @@
 #include "task.h"
 #include "queue.h"
 
+#include "netx_worker.h"
+
 typedef struct AppQueues_tag
 {
-  QueueHandle_t lcdQueue;
   QueueHandle_t ledQueue;
 } AppQueues_t;
 
@@ -29,7 +30,14 @@ struct FreeRTOS_THREAD_Ttag
   TaskHandle_t        hThread;      // Handle to the task object.
 };
 
-void app_init();
-void app_run();
+typedef struct AppResources_Ttag
+{
+  AppQueues_t     tAppQueues;
+  NetxRessource_t *ptNetxRsc;
+} AppResources_t;
+
+void AppManager_Init();
+void AppManager_Run();
+void AppManager_UpdatePeripherals(NetxRessource_t* ptNetxRsc);
 
 #endif /* MANAGER_INC_APP_MANAGER_H_ */

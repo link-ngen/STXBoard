@@ -9,9 +9,9 @@
 #define WORKERS_INC_LCD_WORKER_H_
 
 #include <stdbool.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+//#include "FreeRTOS.h"
+//#include "task.h"
+//#include "queue.h"
 
 typedef enum {
   LCD_IDLE_SCREEN,      /* screen if no activities        */
@@ -29,11 +29,8 @@ typedef struct {
   void* pvCustomData;
 } LcdCommand_t;
 
-#define LCD_STATUS_QUEUE_LEN  1
-//#define LCD_DATA_QUEUE_LEN    5
-
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
-bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand);
+bool LCD_SendCommand(const LcdCommand_t *ptCommand);
 
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

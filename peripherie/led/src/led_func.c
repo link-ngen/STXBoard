@@ -13,7 +13,7 @@ void Led_Init()
   HAL_GPIO_WritePin(CONFIG_LED_GPIO_Port, CONFIG_LED_Pin, GPIO_PIN_RESET);
 }
 
-void Led_EnableConfigError()
+void Led_EnableConfigured()
 {
   HAL_GPIO_WritePin(CONFIG_LED_GPIO_Port, CONFIG_LED_Pin, GPIO_PIN_RESET);
 }

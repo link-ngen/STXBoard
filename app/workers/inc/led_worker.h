@@ -14,11 +14,11 @@
 #include "queue.h"
 
 typedef enum {
-  LED_CMD_CONFIG_BLINK,
-  LED_CMD_CONFIG_ERROR,
-  LED_CMD_RUN_ON,
-  LED_CMD_ERROR_ON,
-  LED_CMD_ERROR_OFF,
+  LED_CMD_CONFIGURING,  /* yellow and green LED alternate flashing */
+  LED_CMD_CONFIGURED,   /* yellow glowing */
+  LED_CMD_RUN_ON,       /* green  glowing */
+  LED_CMD_ERROR_ON,     /* red glowing */
+  LED_CMD_ERROR_OFF,    /* red off */
   LED_CMD_COUNT
 } eLedCommand;
 

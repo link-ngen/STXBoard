@@ -97,9 +97,8 @@ int main(void)
 
   HAL_Delay(10);
 
-  app_init();
-  app_run();
-
+  AppManager_Init();
+  AppManager_Run();
 
   /* USER CODE END 2 */
 

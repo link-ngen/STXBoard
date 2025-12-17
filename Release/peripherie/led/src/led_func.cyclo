@@ -1,5 +1,5 @@
 ../peripherie/led/src/led_func.c:10:6:Led_Init	1
-../peripherie/led/src/led_func.c:16:6:Led_EnableConfigError	1
+../peripherie/led/src/led_func.c:16:6:Led_EnableConfigured	1
 ../peripherie/led/src/led_func.c:21:6:Led_EnableConfigRun	1
 ../peripherie/led/src/led_func.c:26:6:Led_ToggleConfigRun	1
 ../peripherie/led/src/led_func.c:31:6:Led_EnableError	1

@@ -13,5 +13,5 @@
 ../peripherie/netx90/DPMCommunication/src/SystemPackets.c:204:6:SysPkt_HandleFirmwareResetCnf	1
 ../peripherie/netx90/DPMCommunication/src/SystemPackets.c:212:6:SysPkt_AssembleHardwareInfoReq	1
 ../peripherie/netx90/DPMCommunication/src/SystemPackets.c:227:6:SysPkt_HandleHardwareInfoCnf	1
-../peripherie/netx90/DPMCommunication/src/SystemPackets.c:233:6:SysPkt_PD0InTriggeredReq	1
-../peripherie/netx90/DPMCommunication/src/SystemPackets.c:246:6:SysPkt_DeleteConfig	1
+../peripherie/netx90/DPMCommunication/src/SystemPackets.c:233:6:SysPkt_AssemblePD0InTriggeredReq	1
+../peripherie/netx90/DPMCommunication/src/SystemPackets.c:246:6:SysPkt_AssembleDeleteConfig	1

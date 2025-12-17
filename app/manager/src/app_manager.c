@@ -6,24 +6,27 @@
  */
 
 #include "app_manager.h"
-#include "netx_worker.h"
+#include "led_worker.h"
+#include "lcd_worker.h"
 
-AppQueues_t tAppQueues;
+static AppResources_t *s_ptAppRsc;
 
-void app_init()
+void AppManager_Init()
 {
-  tAppQueues.lcdQueue = xQueueCreate(LCD_STATUS_QUEUE_LEN, sizeof(LcdCommand_t));
-  tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
+  s_ptAppRsc = OS_Memalloc(sizeof(AppResources_t));
+  OS_Memset(s_ptAppRsc, 0, sizeof(AppResources_t));
+
+  s_ptAppRsc->tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
 
   FreeRTOS_THREAD_T taskConfigs[] = {
-    { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)&tAppQueues, (tskIDLE_PRIORITY) + 2, NULL },
-    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 4, (void*)tAppQueues.lcdQueue, (tskIDLE_PRIORITY) + 0, NULL },
-    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 1, NULL },
+    { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)s_ptAppRsc->ptNetxRsc, (tskIDLE_PRIORITY) + 2, NULL },
+    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY) + 0, NULL },
+    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)s_ptAppRsc->tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 1, NULL },
   };
 
   BaseType_t xReturned = pdPASS;
 
-  for (int i = 0; i < sizeof(taskConfigs) / sizeof(taskConfigs[0]); ++i)
+  for (uint32_t i = 0; i < sizeof(taskConfigs) / sizeof(taskConfigs[0]); ++i)
   {
       xReturned = xTaskCreate( taskConfigs[i].pfnThread,
                                taskConfigs[i].pcName,
@@ -35,9 +38,14 @@ void app_init()
   }
 }
 
-void app_run()
+void AppManager_Run()
 {
   vTaskStartScheduler();
-
   /* catch errors */
+}
+
+void AppManager_UpdatePeripherals(NetxRessource_t* ptNetxRsc)
+{
+  LED_SendCommand(s_ptAppRsc->tAppQueues.ledQueue, &ptNetxRsc->tLedCmd);
+  LCD_SendCommand(&ptNetxRsc->tLcdCommand);
 }

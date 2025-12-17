@@ -68,6 +68,7 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
 static int PNS_Setup(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc )
 {
   uint32_t lRet = CIFX_NO_ERROR;
+
   PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)hRsc;
   /* Download the configuration */
   lRet = PNS_ConfigureStack( ptRsc );
@@ -167,16 +168,30 @@ static void PNS_DeInitialize(NETX_COMM_CHANNEL_HANDLER_RSC_H phStackRsc, CIFXHAN
       return;
   }
 
-  SysPkt_DeleteConfig(&ptRsc->tPacket);
+  SysPkt_AssembleDeleteConfig(&ptRsc->tPacket);
   (void)Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &ptRsc->tPacket, TXRX_TIMEOUT);
 
   PRINTF("---------- Cleaning finished ----------" NEWLINE);
 }
 
+static uint32_t PNS_ReadNetworkState(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdlRsc)
+{
+  uint32_t lRet = CIFX_NO_ERROR;
+  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)phCommChHdlRsc;
+  HIL_DPM_COMMON_STATUS_BLOCK_T tCommonStatusBlock = { 0 };
+  lRet = xChannelCommonStatusBlock(ptRsc->hCifXChannel, CIFX_CMD_READ_DATA, 0, sizeof(tCommonStatusBlock), &tCommonStatusBlock);
+  if (CIFX_NO_ERROR == lRet)
+  {
+    lRet = tCommonStatusBlock.ulCommunicationState;
+  }
+  return lRet;
+}
+
 NETX_COMM_CHANNEL_HANDLER_T g_tRealtimeEthernetHandler =
 {
-  .pfnInitialize    = PNS_Initialize,
-  .pfnSetup         = PNS_Setup,
-  .pfnCyclicTask    = PNS_IOTask,
-  .pfnDeInitialize  = PNS_DeInitialize,
+  .pfnInitialize          = PNS_Initialize,
+  .pfnSetup               = PNS_Setup,
+  .pfnCyclicTask          = PNS_IOTask,
+  .pfnReadNetworkState    = PNS_ReadNetworkState,
+  .pfnDeInitialize        = PNS_DeInitialize,
 };

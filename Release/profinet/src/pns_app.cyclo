@@ -1,4 +1,5 @@
-../profinet/src/pns_app.c:149:13:PNS_DeInitialize	3
-../profinet/src/pns_app.c:67:12:PNS_Setup	2
+../profinet/src/pns_app.c:151:13:PNS_DeInitialize	3
+../profinet/src/pns_app.c:177:17:PNS_ReadNetworkState	2
+../profinet/src/pns_app.c:68:12:PNS_Setup	2
 ../profinet/src/pns_app.c:18:12:PNS_Initialize	2
-../profinet/src/pns_app.c:118:12:PNS_IOTask	5
+../profinet/src/pns_app.c:120:12:PNS_IOTask	5

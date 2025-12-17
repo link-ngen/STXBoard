@@ -14,6 +14,8 @@
 #include "ssd1306_gfx.h"
 #include "OS_Dependent.h"
 
+#include "cat_frames.h"
+
 #define PI_180      0.0174532
 #define FULL_CIRCLE 360
 
@@ -34,6 +36,8 @@ int16_t angle;
 /* Bouncing ball data */
 uint8_t u8x = 10, u8y = 10;
 int8_t s8speedx = 2, s8speedy = 2;
+
+static LcdCommand_t tLcdCommand = { 0 };
 
 static void drawOctahedron(void)
 {
@@ -132,20 +136,31 @@ static void DrawLoadingAnimation(uint8_t x0, uint8_t y0, uint8_t radius, uint32_
 
 static void ShowIdleScreen(LcdCommand_t* ptLcdPaket)
 {
+  ssd1306_Fill(Black);
   ssd1306_WriteString("Idle screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 static void ShowBootScreen(LcdCommand_t* ptLcdPaket)
 {
+  ssd1306_Fill(Black);
+
   ssd1306_WriteString("Boot screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
 {
+  ssd1306_Fill(Black);
+
   if(angle > FULL_CIRCLE)
   {
     angle = 0;
@@ -163,10 +178,15 @@ static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
   sprintf(string_fps, "%d", (int)(fps / frames));
   ssd1306_WriteString(string_fps, Font_6x8, White);
   ssd1306_WriteString(" fps", Font_6x8, White);
+
+
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 static void ShowBouncingBallScreen(LcdCommand_t *ptLcdPaket)
 {
+  ssd1306_Fill(Black);
   ssd1306_GFX_FillCircle(u8x, u8y, 3, White);
   u8x += s8speedx;
   u8y += s8speedy;
@@ -176,38 +196,52 @@ static void ShowBouncingBallScreen(LcdCommand_t *ptLcdPaket)
     s8speedx = -s8speedx;
   if(u8y <= 5 || u8y >= SSD1306_HEIGHT - 5)
     s8speedy = -s8speedy;
+
+
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 static void ShowConfigScreen(LcdCommand_t* ptLcdPaket)
 {
+  ssd1306_Fill(Black);
   ssd1306_WriteString("Checking config.\n", Font_6x8, White);
   DrawLoadingAnimation(originx, originy, 14, 8);
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 static void ShowIoExchangeScreen(LcdCommand_t* ptLcdPaket)
 {
-  ssd1306_WriteString("IO Exchange screen\n", Font_6x8, White);
-  ssd1306_SetCursor(0, 10);
-  ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+  for (uint8_t i = 0; i < 13; ++i)
+  {
+    ssd1306_Fill(White);
+    ssd1306_GFX_DrawBitMap(0, 0, cat_bitmapallArray[i], SSD1306_WIDTH, SSD1306_HEIGHT, Black);
+    ssd1306_UpdateScreen();
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
 }
 
 static void ShowErrorScreen(LcdCommand_t* ptLcdPaket)
 {
+  ssd1306_Fill(Black);
   ssd1306_WriteString("Error screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-bool LCD_SendCommand(QueueHandle_t q, const LcdCommand_t *ptCommand)
+bool LCD_SendCommand(const LcdCommand_t *ptCommand)
 {
-  if(q == NULL || ptCommand == NULL ||
-    ptCommand->eScreen >= LCD_SCREEN_COUNT)
+  if(tLcdCommand.eScreen == ptCommand->eScreen  ||  /* guard */
+    (ptCommand->eScreen >= LCD_SCREEN_COUNT)    ||
+    (NULL == ptCommand))
   {
     return false;
   }
 
-  LcdCommand_t tTmp = *ptCommand; /* local copy */
-  xQueueOverwrite(q, &tTmp);
+  tLcdCommand = *ptCommand;
   return true;
 }
 
@@ -217,31 +251,28 @@ void LCD_Worker(void *pvParameters)
       [LCD_IDLE_SCREEN]       = ShowIdleScreen,
       [LCD_BOOT_SCREEN]       = ShowBootScreen,
       [LCD_CONFIG_SCREEN]     = ShowConfigScreen,
-      [LCD_VERTEX_SCREEN]     = ShowBouncingBallScreen, //,
+      [LCD_VERTEX_SCREEN]     = ShowBouncingBallScreen, //,ShowBouncingBallScreen
       [LCD_ERROR_SCREEN]      = ShowErrorScreen,
       [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
   };
-  QueueHandle_t lcdQueue = (QueueHandle_t)pvParameters;
-  LcdCommand_t tLcdPacket = { 0 };
+
+  tLcdCommand.eScreen = LCD_IDLE_SCREEN;
 
   ssd1306_Init();
   while(1)
   {
-    if(pdPASS == xQueueReceive(lcdQueue, &tLcdPacket, portMAX_DELAY))
+//    ssd1306_Fill(Black);
+    if(tLcdCommand.eScreen < LCD_SCREEN_COUNT)
     {
-      ssd1306_Fill(Black);
-      if(tLcdPacket.eScreen < LCD_SCREEN_COUNT)
-      {
-        screenFunctions[tLcdPacket.eScreen](&tLcdPacket);
-      }
-      else
-      {
-        ssd1306_WriteString("Unknown CMD received.", Font_6x8, White);
-        ShowIdleScreen(&tLcdPacket);
-      }
-      ssd1306_SetCursor(0, 0);
+      screenFunctions[tLcdCommand.eScreen](&tLcdCommand);
+    }
+    else
+    {
+      ssd1306_WriteString("Unknown CMD received.", Font_6x8, White);
+      ShowIdleScreen(&tLcdCommand);
       ssd1306_UpdateScreen();
       vTaskDelay(pdMS_TO_TICKS(10));
     }
+    //ssd1306_SetCursor(0, 0);
   }
 }

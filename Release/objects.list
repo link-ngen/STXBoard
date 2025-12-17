@@ -40,6 +40,7 @@
 "./app/manager/src/app_manager.o"
 "./app/workers/src/lcd_worker.o"
 "./app/workers/src/led_worker.o"
+"./app/workers/src/netx_functions.o"
 "./app/workers/src/netx_worker.o"
 "./peripherie/lcd/src/ssd1306.o"
 "./peripherie/lcd/src/ssd1306_fonts.o"

@@ -11,7 +11,7 @@
 #include "main.h"
 
 void Led_Init();
-void Led_EnableConfigError();
+void Led_EnableConfigured();
 void Led_EnableConfigRun();
 void Led_ToggleConfigRun();
 void Led_EnableError();
