@@ -187,11 +187,30 @@ static uint32_t PNS_ReadNetworkState(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdl
   return lRet;
 }
 
+void PNS_MailboxTask(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdlRsc)
+{
+  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)phCommChHdlRsc;
+  uint32_t ulTXMbxCnt = 0, ulRXMbxCnt = 0;
+  uint32_t ulRet = CIFX_NO_ERROR;
+
+  while(1)
+  {
+    ulRet = xChannelGetMBXState(ptRsc->hCifXChannel, &ulRXMbxCnt, &ulTXMbxCnt);
+    if(CIFX_NO_ERROR == ulRet && ulRXMbxCnt > 0)
+    {
+      Pkt_CheckReceiveMailbox(ptRsc->hPktIfRsc, &ptRsc->tPacket);
+    }
+    else
+      break;
+  }
+}
+
 NETX_COMM_CHANNEL_HANDLER_T g_tRealtimeEthernetHandler =
 {
   .pfnInitialize          = PNS_Initialize,
   .pfnSetup               = PNS_Setup,
   .pfnCyclicTask          = PNS_IOTask,
+  .pfnMailboxTask         = PNS_MailboxTask,
   .pfnReadNetworkState    = PNS_ReadNetworkState,
   .pfnDeInitialize        = PNS_DeInitialize,
 };

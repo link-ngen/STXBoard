@@ -261,7 +261,6 @@ void LCD_Worker(void *pvParameters)
   ssd1306_Init();
   while(1)
   {
-//    ssd1306_Fill(Black);
     if(tLcdCommand.eScreen < LCD_SCREEN_COUNT)
     {
       screenFunctions[tLcdCommand.eScreen](&tLcdCommand);

@@ -8,6 +8,7 @@
 
 #include "netx_functions.h"
 #include "SerialDPMInterface.h"
+#include "app_config.h"
 
 static PDEVICEINSTANCE ptDevInstance;
 
@@ -96,6 +97,156 @@ int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
   }
 
   return lRet;
+}
+
+/**************************************************************************************/
+/*! Call the event handler function for all channels
+*
+*   \param ptAppData    [in]  Pointer to application data
+*   \param szBoardName  [in]  Name of the board that shall be accessed
+*
+*   \return 0 on success.
+*/
+/**************************************************************************************/
+int32_t NetX_InitializeChannels(NetxRessource_t *ptNetxRsc, char *szBoardName)
+{
+  int32_t lRet = CIFX_NO_ERROR;
+  for(uint8_t i = 0; i < USED_COMMUNICATION_CHANNELS; ++i)
+  {
+    NETX_COMM_CHANNEL_T *ptCommChannel = &ptNetxRsc->atCommChannels[i];
+    CHANNEL_INFORMATION *ptChannelInfo = &ptCommChannel->tCifXChannelInfo;
+    uint32_t ulState = 0;
+
+    if(ptCommChannel->tCommChannelHandler.pfnInitialize != NULL)
+    {
+      /* Open the driver handle of the channel */
+      lRet = xChannelOpen(ptNetxRsc->hDriver, szBoardName, i, &ptCommChannel->hCifXChannel);
+      if(CIFX_NO_ERROR != lRet)
+      {
+        PRINTF("ERROR: xChannelOpen for %s, channel %d failed: 0x%08X" NEWLINE, szBoardName, i, (unsigned int)lRet);
+        return lRet;
+      }
+
+      /* Wait until the channel is ready (If the channel is not ready we can't send packets) */
+      do
+      {
+        memset(ptChannelInfo, 0, sizeof(*ptChannelInfo));
+
+        /** Retrieve the global communication channel information */
+        if(CIFX_NO_ERROR != (lRet = xChannelInfo(ptCommChannel->hCifXChannel, sizeof(CHANNEL_INFORMATION), ptChannelInfo)))
+        {
+          PRINTF("ERROR: Querying communication channel information block: 0x%08X !" NEWLINE, (unsigned int) lRet);
+          return lRet;
+        }
+        else
+        {
+          PRINTF("Communication Channel Info:" NEWLINE);
+          PRINTF("Device Number   : %u" NEWLINE, (unsigned int) ptChannelInfo->ulDeviceNumber);
+          PRINTF("Serial Number   : %u" NEWLINE, (unsigned int) ptChannelInfo->ulSerialNumber);
+          PRINTF("Firmware        : %s" NEWLINE, ptChannelInfo->abFWName);
+          PRINTF("FW Version      : %u.%u.%u.%u" NEWLINE,
+                (unsigned int) ptChannelInfo->usFWMajor,
+                (unsigned int) ptChannelInfo->usFWMinor,
+                (unsigned int) ptChannelInfo->usFWBuild,
+                (unsigned int) ptChannelInfo->usFWRevision);
+
+          PRINTF("FW Date         : %02u/%02u/%04u" NEWLINE,
+            (unsigned int) ptChannelInfo->bFWMonth,
+            (unsigned int) ptChannelInfo->bFWDay,
+            (unsigned int) ptChannelInfo->usFWYear);
+          PRINTF("Mailbox Size    : %u" NEWLINE,
+            (unsigned int) ptChannelInfo->ulMailboxSize);
+        }
+      } while(!(ptChannelInfo->ulDeviceCOSFlags & HIL_COMM_COS_READY)
+        || (ptChannelInfo->ulDeviceCOSFlags == CIFX_DPM_NO_MEMORY_ASSIGNED));
+
+      /** Set the Application state flag in the application COS flags */
+      if(CIFX_NO_ERROR != (lRet = xChannelHostState(ptCommChannel->hCifXChannel, CIFX_HOST_STATE_READY, &ulState, 5)))
+      {
+        PRINTF("ERROR: xChannelHostState failed: 0x%08X" NEWLINE, (unsigned int)lRet);
+        return lRet;
+      }
+
+      /** Initialize the Stack hander */
+      if(CIFX_NO_ERROR !=
+        (lRet = ptCommChannel->tCommChannelHandler.pfnInitialize(&ptCommChannel->hCommChannelRsc, ptCommChannel->hCifXChannel, ptChannelInfo)))
+      {
+        PRINTF("ERROR: Channel initialize failed: 0x%08X" NEWLINE, (unsigned int)lRet);
+        return lRet;
+      }
+    }
+  }
+  return CIFX_NO_ERROR;
+}
+
+/*! Call the start configuration function for all channels
+*
+*   \param ptNetxRsc      [in]  Pointer to application data
+*
+*   \return 0 on success.
+*/
+int32_t NetX_ConfigureChannels(NetxRessource_t* ptNetxRsc)
+{
+  int32_t lRet = CIFX_NO_ERROR;
+
+  for(int i = 0; i < USED_COMMUNICATION_CHANNELS; i++)
+  {
+    NETX_COMM_CHANNEL_T *ptCommChannel = &ptNetxRsc->atCommChannels[i];
+    if(NULL != ptCommChannel->tCommChannelHandler.pfnSetup)
+    {
+      lRet = ptCommChannel->tCommChannelHandler.pfnSetup(ptCommChannel->hCommChannelRsc);
+      if(CIFX_NO_ERROR != lRet)
+      {
+        PRINTF("ERROR: Channel setup failed: 0x%08X" NEWLINE, (unsigned int)lRet);
+        return lRet;
+      }
+
+    }
+  }
+  return CIFX_NO_ERROR;
+}
+
+/*! Call the packet handler function for all communication channel
+*
+*   \param ptNetxRsc      [in]  Pointer to application data
+*
+*/
+void NetX_CallCommMailboxRoutine(NetxRessource_t* ptNetxRsc)
+{
+  NETX_COMM_CHANNEL_T *ptCommChannel = &ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL];
+
+  if (ptCommChannel->tCommChannelHandler.pfnMailboxTask != NULL)
+  {
+    ptCommChannel->tCommChannelHandler.pfnMailboxTask(ptCommChannel->hCommChannelRsc);
+  }
+}
+
+/**************************************************************************************/
+/*! Close all opened channels
+*
+*   \param ptNetxRsc    [in]  Pointer to application data
+*
+*   \return 0 on success.
+*/
+/**************************************************************************************/
+void NetX_AllChannels_Close(NetxRessource_t* ptNetxRsc)
+{
+  for (uint8_t i = 0; i < USED_COMMUNICATION_CHANNELS; ++i)
+  {
+    NETX_COMM_CHANNEL_T *ptCommChannel =  &ptNetxRsc->atCommChannels[i];
+    if (ptCommChannel->hCifXChannel != NULL)
+    {
+      ptCommChannel->tCommChannelHandler.pfnDeInitialize(ptNetxRsc->atCommChannels[i].hCommChannelRsc, ptCommChannel->hCifXChannel);
+      xChannelClose(ptCommChannel->hCifXChannel);
+      ptCommChannel->hCifXChannel = NULL;
+    }
+  }
+}
+
+uint32_t Netx_ReadNetworkState(NetxRessource_t *ptNetxRsc)
+{
+  return ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].tCommChannelHandler.pfnReadNetworkState(
+    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].hCommChannelRsc);
 }
 
 int32_t ProcessIOData(NetxRessource_t *ptNetxRsc)

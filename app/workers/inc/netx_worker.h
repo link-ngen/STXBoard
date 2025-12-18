@@ -20,11 +20,9 @@
 #include "led_worker.h"
 #include "lcd_worker.h"
 
-//#include "app_manager.h"
-
+#define REALTIME_ETH_CHANNEL 0
 /* netX firmware defines */
-#define  COM_CHANNEL                  0     /* Use the first Channel on the choosen board */
-#define  USED_COMMUNICATION_CHANNELS  COM_CHANNEL + 1
+#define  USED_COMMUNICATION_CHANNELS  REALTIME_ETH_CHANNEL + 1
 
 struct NetxRessource_tag;
 typedef void (*NetxStateFunction_t)(struct NetxRessource_tag *ptNetxRsc);
@@ -34,14 +32,14 @@ typedef enum
   NETX_STATE_INIT,
   NETX_STATE_PREOP,
   NETX_STATE_OP,
-  NETX_STATE_STOP,
+//  NETX_STATE_FWUPDATE,
   NETX_STATE_ERROR,
   NETX_STATE_COUNT
-} NetxStateId_t;
+} NetxStateId_e;
 
 typedef struct
 {
-  NetxStateId_t id;
+  NetxStateId_e id;
   NetxStateFunction_t pfnc;
 } NetxStateDescriptor_t;
 
@@ -72,6 +70,7 @@ typedef struct NetxRessource_tag
   eLedCommand                     tLedCmd;
   LcdCommand_t                    tLcdCommand;
 
+  TaskHandle_t                    xMailboxTaskHandle;
 } NetxRessource_t;
 
 void NetxWorker(void *pvParameters);

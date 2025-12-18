@@ -21,7 +21,7 @@ void AppManager_Init()
   FreeRTOS_THREAD_T taskConfigs[] = {
     { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)s_ptAppRsc->ptNetxRsc, (tskIDLE_PRIORITY) + 2, NULL },
     { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 4, NULL, (tskIDLE_PRIORITY) + 0, NULL },
-    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)s_ptAppRsc->tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 1, NULL },
+    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)s_ptAppRsc->tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 3, NULL },
   };
 
   BaseType_t xReturned = pdPASS;

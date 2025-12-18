@@ -8652,7 +8652,7 @@ Disassembly of section .text:
  800561a:	f000 fd11 	bl	8006040 <ssd1306_GFX_DrawBitMap>
  800561e:	3c01      	subs	r4, #1
  8005620:	f000 fb2c 	bl	8005c7c <ssd1306_UpdateScreen>
- 8005624:	200a      	movs	r0, #10
+ 8005624:	2032      	movs	r0, #50	@ 0x32
  8005626:	f7ff fa31 	bl	8004a8c <vTaskDelay>
  800562a:	f014 04ff 	ands.w	r4, r4, #255	@ 0xff
  800562e:	d1ea      	bne.n	8005606 <ShowIoExchangeScreen+0xa>

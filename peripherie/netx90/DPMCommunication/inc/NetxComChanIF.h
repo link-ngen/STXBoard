@@ -73,6 +73,8 @@ typedef int (*NetxComm_CyclicTaskCallback)(NETX_COMM_CHANNEL_HANDLER_RSC_H hComm
  */
 typedef void (*NetxComm_DeInitializeCallback)(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdlRsc, CIFXHANDLE hCifXChannel);
 
+typedef void (*NetxComm_MailboxCallback)(NETX_COMM_CHANNEL_HANDLER_RSC_H hCommChHdlRsc);
+
 typedef uint32_t (*NetxComm_ReadNetworkState)(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdlRsc);
 
 /** Defines the Interface functions which the protocol entry points for the protocol specific functions */
@@ -81,6 +83,7 @@ typedef __HIL_PACKED_PRE struct NETX_COMM_CHANNEL_HANDLER_Ttag
   NetxComm_InitializeCallback    pfnInitialize;
   NetxComm_SetupCallback         pfnSetup;
   NetxComm_CyclicTaskCallback    pfnCyclicTask;
+  NetxComm_MailboxCallback       pfnMailboxTask;
   NetxComm_ReadNetworkState      pfnReadNetworkState;
   NetxComm_DeInitializeCallback  pfnDeInitialize;
 } __HIL_PACKED_POST NETX_COMM_CHANNEL_HANDLER_T;
