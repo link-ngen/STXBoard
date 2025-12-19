@@ -14,10 +14,10 @@ extern DMA_HandleTypeDef hdma_tim3_ch2;
 #define  NEOPXL_NUM_LEDS	8
 
 #define  NEOPXL_TIM_PRESCALE    0  // F_T3  = 64 MHz (11.90ns)
-#define  NEOPXL_TIM_PERIODE   	104  // F_PWM = 800 kHz (1.25us)
+#define  NEOPXL_TIM_PERIODE   	125  // F_PWM = 800 kHz (1.25us)
 
-#define  NEOPXL_LO_TIME        	37  // 29 * 13,9ns = 0.43us
-#define  NEOPXL_HI_TIME        	69  // 58 * 13.9ns = 0.81us
+#define  NEOPXL_LO_TIME        	45  // 29 * 13,9ns = 0.43us
+#define  NEOPXL_HI_TIME        	85  // 58 * 13.9ns = 0.81us
 
 //--------------------------------------------------------------
 // RGB LED Farbdefinition (3 x 8bit)
@@ -45,7 +45,6 @@ typedef struct NEOPXL_RESSOURCE_Ttag {
   __IO uint8_t fDmaReady;
   uint16_t usaTimBuf[NEOPXL_TIM_BUFLEN];
   NEOPXL_RGB_T tLedBuf[NEOPXL_NUM_LEDS];
-  void (*pfDmaCallback)(struct NEOPXL_RESSOURCE_Ttag *pNpxlRsc);
 } NEOPXL_RESSOURCE_T;
 
 // Library Interface

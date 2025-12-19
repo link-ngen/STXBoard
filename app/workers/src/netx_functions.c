@@ -5,14 +5,13 @@
  *      Author: nnguyen
  */
 
-
-#include "netx_functions.h"
+#include "netx_worker.h"
 #include "SerialDPMInterface.h"
 #include "app_config.h"
 
 static PDEVICEINSTANCE ptDevInstance;
 
-static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutInMs, NetxRessource_t *ptNetxRsc)
+static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutInMs, NETX_APP_RSC_T *ptNetxRsc)
 {
   bool fCookieAvailable = false;
   char szCookie[5] = { 0 };
@@ -51,7 +50,7 @@ static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutI
   return fCookieAvailable;
 }
 
-int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
+int32_t InitializeToolkit(NETX_APP_RSC_T *ptNetxRsc)
 {
   int32_t lRet = cifXTKitInit();
 
@@ -108,16 +107,16 @@ int32_t InitializeToolkit(NetxRessource_t *ptNetxRsc)
 *   \return 0 on success.
 */
 /**************************************************************************************/
-int32_t NetX_InitializeChannels(NetxRessource_t *ptNetxRsc, char *szBoardName)
+int32_t NetX_InitializeChannels(NETX_APP_RSC_T *ptNetxRsc, char *szBoardName)
 {
   int32_t lRet = CIFX_NO_ERROR;
   for(uint8_t i = 0; i < USED_COMMUNICATION_CHANNELS; ++i)
   {
-    NETX_COMM_CHANNEL_T *ptCommChannel = &ptNetxRsc->atCommChannels[i];
+    NETX_PROTOCOL_RSC_T *ptCommChannel = ptNetxRsc->atCommChannels[i];
     CHANNEL_INFORMATION *ptChannelInfo = &ptCommChannel->tCifXChannelInfo;
     uint32_t ulState = 0;
 
-    if(ptCommChannel->tCommChannelHandler.pfnInitialize != NULL)
+    if(ptCommChannel->tProtocolDesc.pfnInitialize != NULL)
     {
       /* Open the driver handle of the channel */
       lRet = xChannelOpen(ptNetxRsc->hDriver, szBoardName, i, &ptCommChannel->hCifXChannel);
@@ -169,7 +168,7 @@ int32_t NetX_InitializeChannels(NetxRessource_t *ptNetxRsc, char *szBoardName)
 
       /** Initialize the Stack hander */
       if(CIFX_NO_ERROR !=
-        (lRet = ptCommChannel->tCommChannelHandler.pfnInitialize(&ptCommChannel->hCommChannelRsc, ptCommChannel->hCifXChannel, ptChannelInfo)))
+        (lRet = ptCommChannel->tProtocolDesc.pfnInitialize(ptCommChannel, ptCommChannel->hCifXChannel, ptChannelInfo)))
       {
         PRINTF("ERROR: Channel initialize failed: 0x%08X" NEWLINE, (unsigned int)lRet);
         return lRet;
@@ -185,16 +184,16 @@ int32_t NetX_InitializeChannels(NetxRessource_t *ptNetxRsc, char *szBoardName)
 *
 *   \return 0 on success.
 */
-int32_t NetX_ConfigureChannels(NetxRessource_t* ptNetxRsc)
+int32_t NetX_ConfigureChannels(NETX_APP_RSC_T* ptNetxRsc)
 {
   int32_t lRet = CIFX_NO_ERROR;
 
   for(int i = 0; i < USED_COMMUNICATION_CHANNELS; i++)
   {
-    NETX_COMM_CHANNEL_T *ptCommChannel = &ptNetxRsc->atCommChannels[i];
-    if(NULL != ptCommChannel->tCommChannelHandler.pfnSetup)
+    NETX_PROTOCOL_RSC_T *ptCommChannel = ptNetxRsc->atCommChannels[i];
+    if(NULL != ptCommChannel->tProtocolDesc.pfnSetup)
     {
-      lRet = ptCommChannel->tCommChannelHandler.pfnSetup(ptCommChannel->hCommChannelRsc);
+      lRet = ptCommChannel->tProtocolDesc.pfnSetup(ptCommChannel);
       if(CIFX_NO_ERROR != lRet)
       {
         PRINTF("ERROR: Channel setup failed: 0x%08X" NEWLINE, (unsigned int)lRet);
@@ -211,13 +210,13 @@ int32_t NetX_ConfigureChannels(NetxRessource_t* ptNetxRsc)
 *   \param ptNetxRsc      [in]  Pointer to application data
 *
 */
-void NetX_CallCommMailboxRoutine(NetxRessource_t* ptNetxRsc)
+void NetX_CallCommMailboxRoutine(NETX_APP_RSC_T* ptNetxRsc)
 {
-  NETX_COMM_CHANNEL_T *ptCommChannel = &ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL];
+  NETX_PROTOCOL_RSC_T *ptCommChannel = ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL];
 
-  if (ptCommChannel->tCommChannelHandler.pfnMailboxTask != NULL)
+  if (ptCommChannel->tProtocolDesc.pfnMailboxTask != NULL)
   {
-    ptCommChannel->tCommChannelHandler.pfnMailboxTask(ptCommChannel->hCommChannelRsc);
+    ptCommChannel->tProtocolDesc.pfnMailboxTask(ptCommChannel);
   }
 }
 
@@ -229,31 +228,28 @@ void NetX_CallCommMailboxRoutine(NetxRessource_t* ptNetxRsc)
 *   \return 0 on success.
 */
 /**************************************************************************************/
-void NetX_AllChannels_Close(NetxRessource_t* ptNetxRsc)
+void NetX_AllChannels_Close(NETX_APP_RSC_T* ptNetxRsc)
 {
   for (uint8_t i = 0; i < USED_COMMUNICATION_CHANNELS; ++i)
   {
-    NETX_COMM_CHANNEL_T *ptCommChannel =  &ptNetxRsc->atCommChannels[i];
+    NETX_PROTOCOL_RSC_T *ptCommChannel = ptNetxRsc->atCommChannels[i];
     if (ptCommChannel->hCifXChannel != NULL)
     {
-      ptCommChannel->tCommChannelHandler.pfnDeInitialize(ptNetxRsc->atCommChannels[i].hCommChannelRsc, ptCommChannel->hCifXChannel);
+      ptCommChannel->tProtocolDesc.pfnDeInitialize(ptCommChannel, ptCommChannel->hCifXChannel);
       xChannelClose(ptCommChannel->hCifXChannel);
       ptCommChannel->hCifXChannel = NULL;
     }
   }
 }
 
-uint32_t Netx_ReadNetworkState(NetxRessource_t *ptNetxRsc)
+uint32_t Netx_ReadNetworkState(NETX_APP_RSC_T *ptNetxRsc)
 {
-  return ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].tCommChannelHandler.pfnReadNetworkState(
-    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].hCommChannelRsc);
+  return ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc.pfnReadNetworkState(ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]);
 }
 
-int32_t ProcessIOData(NetxRessource_t *ptNetxRsc)
+int32_t NetX_ProcessIOData(NETX_APP_RSC_T *ptNetxRsc)
 {
   int32_t lRet = CIFX_NO_ERROR;
-  PNS_RESSOURCES_T *ptPnsRsc = (PNS_RESSOURCES_T*)ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].hCommChannelRsc;
-
 
 
   return lRet;

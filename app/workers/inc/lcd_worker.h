@@ -9,9 +9,6 @@
 #define WORKERS_INC_LCD_WORKER_H_
 
 #include <stdbool.h>
-//#include "FreeRTOS.h"
-//#include "task.h"
-//#include "queue.h"
 
 typedef enum {
   LCD_IDLE_SCREEN,      /* screen if no activities        */

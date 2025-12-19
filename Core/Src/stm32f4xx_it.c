@@ -22,6 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "neopixel.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,10 +61,11 @@ extern I2C_HandleTypeDef hi2c1;
 extern DMA_HandleTypeDef hdma_spi1_rx;
 extern DMA_HandleTypeDef hdma_spi1_tx;
 extern SPI_HandleTypeDef hspi1;
+extern DMA_HandleTypeDef hdma_tim3_ch2;
 extern TIM_HandleTypeDef htim9;
 
 /* USER CODE BEGIN EV */
-
+//extern NEOPXL_RESSOURCE_T tNeopxl;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -190,6 +192,23 @@ void DMA1_Stream1_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
 
   /* USER CODE END DMA1_Stream1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA1 stream5 global interrupt.
+  */
+void DMA1_Stream5_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream5_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_tim3_ch2);
+  /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
+//  if (NULL != tNeopxl.pfDmaCallback)
+//  {
+//    tNeopxl.pfDmaCallback(&tNeopxl);
+//  }
+  /* USER CODE END DMA1_Stream5_IRQn 1 */
 }
 
 /**

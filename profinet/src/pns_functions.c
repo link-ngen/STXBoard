@@ -264,10 +264,10 @@ static long BuildModulConfig(void* pvPck)
   return (long) ptSubmod - (long) ptModule;
 } /* BuildModulConfig */
 
-uint32_t  PNS_ConfigureStack(PNS_RESSOURCES_T* ptRsc)
+uint32_t  PNS_ConfigureStack(NETX_PROTOCOL_RSC_T* ptProtocolRsc)
 {
   uint32_t ulRet = CIFX_NO_ERROR;
-  CIFX_PACKET *ptPacket = &ptRsc->tPacket;
+  CIFX_PACKET *ptPacket = &ptProtocolRsc->tPacket;
 
   uint16_t usDeviceClass = 0;
 
@@ -314,13 +314,13 @@ uint32_t  PNS_ConfigureStack(PNS_RESSOURCES_T* ptRsc)
     ptPacket->tHeader.ulExt |= HIL_PACKET_SEQ_FIRST | ulIndex;
     memcpy(ptPacket->abData, &((uint8_t*) &tConfiguration)[ulOffset], ptPacket->tHeader.ulLen);
 
-    ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &(ptRsc->tPacket), TXRX_TIMEOUT);
+    ulRet = Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &(ptProtocolRsc->tPacket), TXRX_TIMEOUT);
 
     if(CIFX_NO_ERROR != ulRet)
       return ulRet;
 
-    if(SUCCESS_HIL_OK != ptRsc->tPacket.tHeader.ulState)
-      return ptRsc->tPacket.tHeader.ulState;
+    if(SUCCESS_HIL_OK != ptProtocolRsc->tPacket.tHeader.ulState)
+      return ptProtocolRsc->tPacket.tHeader.ulState;
 
     ulIndex++;
     ulOffset = sizeof(ptPacket->abData) * ulIndex;
@@ -333,12 +333,12 @@ uint32_t  PNS_ConfigureStack(PNS_RESSOURCES_T* ptRsc)
       ptPacket->tHeader.ulExt |= HIL_PACKET_SEQ_MIDDLE | ulIndex;
       memcpy(ptPacket->abData, &((uint8_t*) &tConfiguration)[ulOffset], ptPacket->tHeader.ulLen);
 
-      ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &(ptRsc->tPacket), TXRX_TIMEOUT);
+      ulRet = Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &(ptProtocolRsc->tPacket), TXRX_TIMEOUT);
       if(CIFX_NO_ERROR != ulRet)
         return ulRet;
 
-      if(SUCCESS_HIL_OK != ptRsc->tPacket.tHeader.ulState)
-        return ptRsc->tPacket.tHeader.ulState;
+      if(SUCCESS_HIL_OK != ptProtocolRsc->tPacket.tHeader.ulState)
+        return ptProtocolRsc->tPacket.tHeader.ulState;
 
       ulIndex++;
       ulOffset = sizeof(ptPacket->abData) * ulIndex;
@@ -351,36 +351,36 @@ uint32_t  PNS_ConfigureStack(PNS_RESSOURCES_T* ptRsc)
     memcpy(ptPacket->abData, &((uint8_t*) &tConfiguration)[ulOffset], sizeof(tConfiguration) - ulOffset);
   }
 
-  ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &(ptRsc->tPacket), TXRX_TIMEOUT);
+  ulRet = Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &(ptProtocolRsc->tPacket), TXRX_TIMEOUT);
   if(CIFX_NO_ERROR != ulRet)
     return ulRet;
 
-  if(SUCCESS_HIL_OK != ptRsc->tPacket.tHeader.ulState)
-    return ptRsc->tPacket.tHeader.ulState;
+  if(SUCCESS_HIL_OK != ptProtocolRsc->tPacket.tHeader.ulState)
+    return ptProtocolRsc->tPacket.tHeader.ulState;
 
   SysPkt_AssembleChannelInitReq(ptPacket);
-  ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &(ptRsc->tPacket), TXRX_TIMEOUT);
+  ulRet = Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &(ptProtocolRsc->tPacket), TXRX_TIMEOUT);
   if(CIFX_NO_ERROR != ulRet)
     return ulRet;
 
-  if(SUCCESS_HIL_OK != ptRsc->tPacket.tHeader.ulState)
-    return ptRsc->tPacket.tHeader.ulState;
+  if(SUCCESS_HIL_OK != ptProtocolRsc->tPacket.tHeader.ulState)
+    return ptProtocolRsc->tPacket.tHeader.ulState;
 
   SysPkt_AssembleStartStopCommReq(ptPacket, true);
-  ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &(ptRsc->tPacket), TXRX_TIMEOUT);
+  ulRet = Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &(ptProtocolRsc->tPacket), TXRX_TIMEOUT);
   if(CIFX_NO_ERROR != ulRet)
     return ulRet;
 
-  if(SUCCESS_HIL_OK != ptRsc->tPacket.tHeader.ulState)
-    return ptRsc->tPacket.tHeader.ulState;
+  if(SUCCESS_HIL_OK != ptProtocolRsc->tPacket.tHeader.ulState)
+    return ptProtocolRsc->tPacket.tHeader.ulState;
 
 
-  ptRsc->fDeviceIsRunning = true;
+  ptProtocolRsc->fDeviceIsRunning = true;
   return CIFX_NO_ERROR;
 }
 
 #ifdef HOST_APPLICATION_SETS_SERIAL_NUMBER
-uint32_t PNS_SetOemData(PNS_RESSOURCES_T* ptRsc)
+uint32_t PNS_SetOemData(NETX_PROTOCOL_RSC_T* ptRsc)
 {
   uint32_t ulRet = CIFX_NO_ERROR;
   HIL_DDP_SERVICE_SET_REQ_T *ptReq = (HIL_DDP_SERVICE_SET_REQ_T*) &ptRsc->tPacket;
@@ -448,7 +448,7 @@ uint32_t PNS_SetOemData(PNS_RESSOURCES_T* ptRsc)
 #endif
 
 #if defined(HOST_APPLICATION_SETS_MAC_ADDRESS) || defined(HOST_APPLICATION_SETS_SERIAL_NUMBER)
-uint32_t  PNS_ActivateDdp(PNS_RESSOURCES_T* ptRsc)
+uint32_t  PNS_ActivateDdp(NETX_PROTOCOL_RSC_T* ptRsc)
 {
   uint32_t ulRet = CIFX_NO_ERROR;
   HIL_DDP_SERVICE_SET_REQ_T *ptReq = (HIL_DDP_SERVICE_SET_REQ_T*) &ptRsc->tPacket;
@@ -468,7 +468,7 @@ uint32_t  PNS_ActivateDdp(PNS_RESSOURCES_T* ptRsc)
 #endif
 
 #ifdef HOST_APPLICATION_SETS_MAC_ADDRESS
-uint32_t  PNS_SetMacAddress(PNS_RESSOURCES_T* ptRsc)
+uint32_t  PNS_SetMacAddress(NETX_PROTOCOL_RSC_T* ptRsc)
 {
   uint32_t                   ulRet = CIFX_NO_ERROR;
   HIL_DDP_SERVICE_SET_REQ_T* ptReq = (HIL_DDP_SERVICE_SET_REQ_T*)&ptRsc->tPacket;
@@ -501,7 +501,7 @@ uint32_t  PNS_SetMacAddress(PNS_RESSOURCES_T* ptRsc)
 
 bool PNS_PacketHandler(CIFX_PACKET* ptPacket, void* pvUserData)
 {
-  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)pvUserData;
+  NETX_PROTOCOL_RSC_T *ptRsc = (NETX_PROTOCOL_RSC_T*)pvUserData;
   bool fPacketCouldBeHandled = false;
 
   if(ptPacket != &(ptRsc->tPacket))

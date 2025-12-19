@@ -5,7 +5,6 @@
  *      Author: nnguyen
  */
 
-#include "NetxComChanIF.h"
 #include "pns_functions.h"
 #include "pns_config.h"
 #include "cifXErrors.h"
@@ -13,19 +12,16 @@
 #include "app_config.h"
 #include "SystemPackets.h"
 
-static PNS_RESSOURCES_T s_tPnsRsc;
-
-static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDLE hCifXChannel, CHANNEL_INFORMATION *ptCifXChannelInfo )
+static int PNS_Initialize(NETX_PROTOCOL_RSC_T *ptProtocolRsc, CIFXHANDLE hCifXChannel, CHANNEL_INFORMATION *ptCifXChannelInfo )
 {
   uint32_t ulRet = CIFX_NO_ERROR;
-  PNS_RESSOURCES_T *ptRsc = &s_tPnsRsc;
-  ptRsc->hCifXChannel = hCifXChannel;
-  ptRsc->ptCifXChannelInfo = ptCifXChannelInfo;
-  ptRsc->fDeviceIsRunning = false;
+  ptProtocolRsc->hCifXChannel = hCifXChannel;
+  ptProtocolRsc->tCifXChannelInfo = *ptCifXChannelInfo;
+  ptProtocolRsc->fDeviceIsRunning = false;
 
-  if(Pkt_Init(&(ptRsc->hPktIfRsc), ptRsc->hCifXChannel))
+  if(Pkt_Init(&(ptProtocolRsc->hPktIfRsc), ptProtocolRsc->hCifXChannel))
   {
-    Pkt_RegisterPacketHandler(ptRsc->hPktIfRsc, PNS_PacketHandler, ptRsc);
+    Pkt_RegisterPacketHandler(ptProtocolRsc->hPktIfRsc, PNS_PacketHandler, ptProtocolRsc);
   }
 
 #ifdef HOST_APPLICATION_SETS_MAC_ADDRESS
@@ -54,7 +50,6 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
   OS_Sleep(100);
 #endif
 
-  *phStackRsc = (NETX_COMM_CHANNEL_HANDLER_RSC_H)ptRsc;
   return ulRet;
 }
 
@@ -65,16 +60,15 @@ static int PNS_Initialize(NETX_COMM_CHANNEL_HANDLER_RSC_H *phStackRsc, CIFXHANDL
 *
 *   \return CIFX_NO_ERROR on success.
 **************************************************************************************/
-static int PNS_Setup(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc )
+static int PNS_Setup(NETX_PROTOCOL_RSC_T *ptProtocolRsc )
 {
   uint32_t lRet = CIFX_NO_ERROR;
 
-  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)hRsc;
   /* Download the configuration */
-  lRet = PNS_ConfigureStack( ptRsc );
+  lRet = PNS_ConfigureStack( ptProtocolRsc );
   if (CIFX_NO_ERROR == lRet)
   {
-    ptRsc->fDeviceIsRunning = true;
+    ptProtocolRsc->fDeviceIsRunning = true;
   }
 
   return lRet;
@@ -89,23 +83,23 @@ static int PNS_Setup(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc )
 * \param ptAppData  [in]  Pointer to application data
 */
 /**************************************************************************************/
-static void IO_UpdateCycleCounter( PNS_RESSOURCES_T* ptRsc )
+static void IO_UpdateCycleCounter( NETX_PROTOCOL_RSC_T* ptProtocolRsc )
 {
   static uint32_t s_ulCycle = 0;
 
   s_ulCycle++;
 
-  if (ptRsc->tInputData.bCyclicCounter_Speed > 0)
+  if (ptProtocolRsc->tInputData.bCyclicCounter_Speed > 0)
   {
-    if (s_ulCycle >= ptRsc->tInputData.bCyclicCounter_Speed)
+    if (s_ulCycle >= ptProtocolRsc->tInputData.bCyclicCounter_Speed)
     {
-      if (APP_CYCLE_COUNTER_COUNT_UP == ptRsc->tInputData.bCyclicCounter_Direction)
+      if (APP_CYCLE_COUNTER_COUNT_UP == ptProtocolRsc->tInputData.bCyclicCounter_Direction)
       {
-        ptRsc->tOutputData.usCyclicCounter++;
+        ptProtocolRsc->tOutputData.usCyclicCounter++;
       }
       else
       {
-        ptRsc->tOutputData.usCyclicCounter--;
+        ptProtocolRsc->tOutputData.usCyclicCounter--;
       }
 
       s_ulCycle = 0;
@@ -113,19 +107,17 @@ static void IO_UpdateCycleCounter( PNS_RESSOURCES_T* ptRsc )
   }
   else
   {
-    ptRsc->tOutputData.usCyclicCounter = 0xFFFF;
+    ptProtocolRsc->tOutputData.usCyclicCounter = 0xFFFF;
   }
 }
 
-static int PNS_IOTask(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc)
+static int PNS_IOTask(NETX_PROTOCOL_RSC_T *ptProtocolRsc)
 {
-  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*) hRsc;
-
   long lRet = CIFX_NO_ERROR; /** Return value for common error codes  */
-  IO_UpdateCycleCounter(ptRsc);
+  IO_UpdateCycleCounter(ptProtocolRsc);
 
   /** INPUT DATA *********************************************************************/
-  lRet = xChannelIORead(ptRsc->hCifXChannel, 0, 0, sizeof(ptRsc->tInputData), &ptRsc->tInputData, 0);
+  lRet = xChannelIORead(ptProtocolRsc->hCifXChannel, 0, 0, sizeof(ptProtocolRsc->tInputData), &ptProtocolRsc->tInputData, 0);
   if(CIFX_NO_ERROR != lRet)
   {
     /** Something failed?
@@ -139,7 +131,7 @@ static int PNS_IOTask(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc)
   /* Process data... */
 
   /** OUTPUT DATA ***************************************/
-  lRet = xChannelIOWrite(ptRsc->hCifXChannel, 0, 0, sizeof(ptRsc->tOutputData), &ptRsc->tOutputData, 0);
+  lRet = xChannelIOWrite(ptProtocolRsc->hCifXChannel, 0, 0, sizeof(ptProtocolRsc->tOutputData), &ptProtocolRsc->tOutputData, 0);
   return lRet;
 }
 
@@ -148,38 +140,36 @@ static int PNS_IOTask(NETX_COMM_CHANNEL_HANDLER_RSC_H hRsc)
 *
 *   \param phCommChHdlRsc
 **************************************************************************************/
-static void PNS_DeInitialize(NETX_COMM_CHANNEL_HANDLER_RSC_H phStackRsc, CIFXHANDLE hCifXChannel)
+static void PNS_DeInitialize(NETX_PROTOCOL_RSC_T *ptProtocolRsc, CIFXHANDLE hCifXChannel)
 {
   PRINTF("---------- Free memory and unregister callbacks ----------" NEWLINE);
 
   uint32_t ulRet = CIFX_NO_ERROR;
-  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)phStackRsc;
   uint32_t            ulState = 0;
 
-  if (NULL == ptRsc) return;
+  if (NULL == ptProtocolRsc) return;
 
   /* First, turn the bus off */
-  SysPkt_AssembleStartStopCommReq(&ptRsc->tPacket, false);
-  ulRet = Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &ptRsc->tPacket, TXRX_TIMEOUT);
+  SysPkt_AssembleStartStopCommReq(&ptProtocolRsc->tPacket, false);
+  ulRet = Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &ptProtocolRsc->tPacket, TXRX_TIMEOUT);
 
-  if (CIFX_NO_ERROR != (ulRet = xChannelHostState(ptRsc->hCifXChannel, CIFX_HOST_STATE_NOT_READY, &ulState, 5)))
+  if (CIFX_NO_ERROR != (ulRet = xChannelHostState(ptProtocolRsc->hCifXChannel, CIFX_HOST_STATE_NOT_READY, &ulState, 5)))
   {
       PRINTF("ERROR: xChannelHostState failed: 0x%08X" NEWLINE, (unsigned int)ulRet);
       return;
   }
 
-  SysPkt_AssembleDeleteConfig(&ptRsc->tPacket);
-  (void)Pkt_SendReceivePacket(ptRsc->hPktIfRsc, &ptRsc->tPacket, TXRX_TIMEOUT);
+  SysPkt_AssembleDeleteConfig(&ptProtocolRsc->tPacket);
+  (void)Pkt_SendReceivePacket(ptProtocolRsc->hPktIfRsc, &ptProtocolRsc->tPacket, TXRX_TIMEOUT);
 
   PRINTF("---------- Cleaning finished ----------" NEWLINE);
 }
 
-static uint32_t PNS_ReadNetworkState(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdlRsc)
+static uint32_t PNS_ReadNetworkState(NETX_PROTOCOL_RSC_T *ptProtocolRsc)
 {
   uint32_t lRet = CIFX_NO_ERROR;
-  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)phCommChHdlRsc;
   HIL_DPM_COMMON_STATUS_BLOCK_T tCommonStatusBlock = { 0 };
-  lRet = xChannelCommonStatusBlock(ptRsc->hCifXChannel, CIFX_CMD_READ_DATA, 0, sizeof(tCommonStatusBlock), &tCommonStatusBlock);
+  lRet = xChannelCommonStatusBlock(ptProtocolRsc->hCifXChannel, CIFX_CMD_READ_DATA, 0, sizeof(tCommonStatusBlock), &tCommonStatusBlock);
   if (CIFX_NO_ERROR == lRet)
   {
     lRet = tCommonStatusBlock.ulCommunicationState;
@@ -187,25 +177,24 @@ static uint32_t PNS_ReadNetworkState(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdl
   return lRet;
 }
 
-void PNS_MailboxTask(NETX_COMM_CHANNEL_HANDLER_RSC_H phCommChHdlRsc)
+void PNS_MailboxTask(NETX_PROTOCOL_RSC_T *ptProtocolRsc)
 {
-  PNS_RESSOURCES_T *ptRsc = (PNS_RESSOURCES_T*)phCommChHdlRsc;
   uint32_t ulTXMbxCnt = 0, ulRXMbxCnt = 0;
   uint32_t ulRet = CIFX_NO_ERROR;
 
   while(1)
   {
-    ulRet = xChannelGetMBXState(ptRsc->hCifXChannel, &ulRXMbxCnt, &ulTXMbxCnt);
+    ulRet = xChannelGetMBXState(ptProtocolRsc->hCifXChannel, &ulRXMbxCnt, &ulTXMbxCnt);
     if(CIFX_NO_ERROR == ulRet && ulRXMbxCnt > 0)
     {
-      Pkt_CheckReceiveMailbox(ptRsc->hPktIfRsc, &ptRsc->tPacket);
+      Pkt_CheckReceiveMailbox(ptProtocolRsc->hPktIfRsc, &ptProtocolRsc->tPacket);
     }
     else
       break;
   }
 }
 
-NETX_COMM_CHANNEL_HANDLER_T g_tRealtimeEthernetHandler =
+NETX_PROTOCOL_DESC_T g_tRealtimeEthernetHandler =
 {
   .pfnInitialize          = PNS_Initialize,
   .pfnSetup               = PNS_Setup,

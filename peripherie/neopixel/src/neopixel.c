@@ -7,6 +7,7 @@
 #include <string.h>
 #include "neopixel.h"
 
+static NEOPXL_RESSOURCE_T *s_ptNeopxl;
 static uint16_t neopixel_lut[256][8];
 
 static void Neopxl_InitLUT(void)
@@ -68,8 +69,8 @@ static void startDMA(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 void Neopxl_Init(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
   Neopxl_InitLUT();
+  s_ptNeopxl = ptNpxlRsc;
   ptNpxlRsc->fDmaReady = 1;
-  ptNpxlRsc->pfDmaCallback = DMA_Callback;
 }
 
 void Neopxl_Refresh(NEOPXL_RESSOURCE_T* ptNpxlRsc)
@@ -286,3 +287,8 @@ void Neopxl_Rotate_Right(NEOPXL_RESSOURCE_T* ptNpxlRsc, uint8_t refresh)
   }
 }
 
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+{
+  HAL_TIM_PWM_Stop_DMA(htim, TIM_CHANNEL_2);
+  DMA_Callback(s_ptNeopxl);
+}

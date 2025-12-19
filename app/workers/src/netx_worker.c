@@ -9,26 +9,23 @@
 #include "app_config.h"
 #include "app_manager.h"
 #include "netx_worker.h"
-#include "netx_functions.h"
 
 #define IO_CYCLE_TIME     4   /* in milli seconds */
 
-extern NETX_COMM_CHANNEL_HANDLER_T g_tRealtimeEthernetHandler;
-extern NETX_COMM_CHANNEL_HANDLER_T g_tNetworkServicesHandlers;
+extern NETX_PROTOCOL_DESC_T g_tRealtimeEthernetHandler;
+extern NETX_PROTOCOL_DESC_T g_tNetworkServicesHandlers;
 
-static NetxRessource_t *s_ptNetxFSM;
-
-static void State_NetxInit(NetxRessource_t *ptNetxRsc);
-static void State_NetxPreOP(NetxRessource_t *ptNetxRsc);
-static void State_NetxOP(NetxRessource_t *ptNetxRsc);
-static void State_NetxError(NetxRessource_t *ptNetxRsc);
+static void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc);
+static void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc);
+static void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc);
+static void State_NetxError(NETX_APP_RSC_T *ptNetxRsc);
 
 static const NetxStateDescriptor_t NETX_STATE_INIT_DESC  = { NETX_STATE_INIT,  State_NetxInit  };
 static const NetxStateDescriptor_t NETX_STATE_PREOP_DESC = { NETX_STATE_PREOP, State_NetxPreOP };
 static const NetxStateDescriptor_t NETX_STATE_OP_DESC    = { NETX_STATE_OP,    State_NetxOP    };
 static const NetxStateDescriptor_t NETX_STATE_ERROR_DESC = { NETX_STATE_ERROR, State_NetxError };
 
-static void NetX_OnEnterState(NetxRessource_t *ptNetxRsc, NetxStateId_e tNextStateId)
+static void NetX_OnEnterState(NETX_APP_RSC_T *ptNetxRsc, NetxStateId_e tNextStateId)
 {
   switch (tNextStateId)
   {
@@ -55,7 +52,7 @@ static void NetX_OnEnterState(NetxRessource_t *ptNetxRsc, NetxStateId_e tNextSta
   }
 }
 
-static void NetX_FSMTransition(NetxRessource_t *ptNetxRsc, const NetxStateDescriptor_t *ptNextState)
+static void NetX_FSMTransition(NETX_APP_RSC_T *ptNetxRsc, const NetxStateDescriptor_t *ptNextState)
 {
   if(ptNetxRsc->currentState->id == ptNextState->id)
     return;
@@ -67,7 +64,7 @@ static void NetX_FSMTransition(NetxRessource_t *ptNetxRsc, const NetxStateDescri
   AppManager_UpdatePeripherals(ptNetxRsc);
 }
 
-void State_NetxInit(NetxRessource_t *ptNetxRsc)
+void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
 {
   PRINTF("---------- NetX Init ----------" NEWLINE);
   int32_t lRet = InitializeToolkit(ptNetxRsc);
@@ -75,9 +72,12 @@ void State_NetxInit(NetxRessource_t *ptNetxRsc)
 
   if (CIFX_NO_ERROR == lRet)
   {
-    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].tCommChannelHandler = g_tRealtimeEthernetHandler;
+    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL] = (NETX_PROTOCOL_RSC_T*)OS_Memcalloc(1, sizeof(NETX_PROTOCOL_RSC_T));
+    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc = g_tRealtimeEthernetHandler;
+
 #if USED_COMMUNICATION_CHANNELS >= 2
-    ptNetxRsc->atCommChannels[1].tCommChannelHandler = g_tNetworkServicesHandlers;
+    ptNetxRsc->atCommChannels[1] = (NETX_PROTOCOL_RSC_T*)OS_Memcalloc(1, sizeof(NETX_PROTOCOL_RSC_T));
+    ptNetxRsc->atCommChannels[1]->tProtocolDesc = g_tNetworkServicesHandlers;
 #endif
     lRet = xDriverOpen(&ptNetxRsc->hDriver);
     if (CIFX_NO_ERROR != lRet)
@@ -85,7 +85,7 @@ void State_NetxInit(NetxRessource_t *ptNetxRsc)
       snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "DrvOpen err \n");
       ptNetxStateDesc = &NETX_STATE_ERROR_DESC;
     }
-    else
+    else /* CifXToolkit driver open succeed */
     {
       snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "DrvOpen ok\n");
       (void) vTaskResume(ptNetxRsc->xMailboxTaskHandle);
@@ -101,11 +101,11 @@ void State_NetxInit(NetxRessource_t *ptNetxRsc)
   vTaskDelay(pdMS_TO_TICKS(1));
 }
 
-void State_NetxPreOP(NetxRessource_t *ptNetxRsc)
+void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
 {
   PRINTF("---------- NetX PreOP ----------" NEWLINE);
 
-  if(!((PNS_RESSOURCES_T*) ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].hCommChannelRsc)->fDeviceIsRunning)
+  if(!(ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL])->fDeviceIsRunning)
   {
     if((CIFX_NO_ERROR != NetX_InitializeChannels(ptNetxRsc, "cifX0")) ||
       (CIFX_NO_ERROR != NetX_ConfigureChannels(ptNetxRsc)))
@@ -135,24 +135,24 @@ void State_NetxPreOP(NetxRessource_t *ptNetxRsc)
   vTaskDelay(pdMS_TO_TICKS(1));
 }
 
-void State_NetxOP(NetxRessource_t *ptNetxRsc)
+void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
 {
   PRINTF("---------- NetX OP ----------" NEWLINE);
   static int32_t lRet = CIFX_NO_ERROR;
   static const NetxStateDescriptor_t *ptNetxStateDesc;
-  const NETX_COMM_CHANNEL_HANDLER_T *ptComChannelHandler = &ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].tCommChannelHandler;
+  const NETX_PROTOCOL_DESC_T *ptComChannelHandler = &ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc;
 
   if (NULL != ptComChannelHandler->pfnCyclicTask)
   {
     /* Get data from field bus */
-    lRet = ptComChannelHandler->pfnCyclicTask(ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL].hCommChannelRsc);
+    lRet = ptComChannelHandler->pfnCyclicTask(ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]);
 
     switch (lRet)
     {
     case CIFX_NO_ERROR:
       /* Process input data and prepare for the next write to the field bus */
       // TODO: process io data. Send input data to other task and get the output data from other task
-      ProcessIOData(ptNetxRsc);
+      NetX_ProcessIOData(ptNetxRsc);
 
       ptNetxStateDesc = &NETX_STATE_OP_DESC;
       break;
@@ -175,7 +175,7 @@ void State_NetxOP(NetxRessource_t *ptNetxRsc)
   vTaskDelay(pdMS_TO_TICKS(IO_CYCLE_TIME)); /* 4ms io cyclic task */
 }
 
-void State_NetxError(NetxRessource_t *ptNetxRsc)
+void State_NetxError(NETX_APP_RSC_T *ptNetxRsc)
 {
   PRINTF("---------- NetX Error ----------" NEWLINE);
 
@@ -192,7 +192,7 @@ void State_NetxError(NetxRessource_t *ptNetxRsc)
 
     /* Manually update peripherals */
     AppManager_UpdatePeripherals(ptNetxRsc);
-    vTaskSuspend(s_ptNetxFSM->xMailboxTaskHandle);
+    vTaskSuspend(ptNetxRsc->xMailboxTaskHandle);
   }
   ptNetxRsc->previousState = &NETX_STATE_ERROR_DESC;
   vTaskDelay(pdMS_TO_TICKS(1));
@@ -200,7 +200,7 @@ void State_NetxError(NetxRessource_t *ptNetxRsc)
 
 static void NetX_MailboxTask(void* pvParameters)
 {
-  NetxRessource_t *ptNetxRsc = (NetxRessource_t*)pvParameters;
+  NETX_APP_RSC_T *ptNetxRsc = (NETX_APP_RSC_T*)pvParameters;
   while (1)
   {
     NetX_CallCommMailboxRoutine(ptNetxRsc);
@@ -210,12 +210,12 @@ static void NetX_MailboxTask(void* pvParameters)
 
 void NetxWorker(void *pvParameters)
 {
-  s_ptNetxFSM = OS_Memalloc(sizeof(NetxRessource_t));
-  OS_Memset(s_ptNetxFSM, 0, sizeof(NetxRessource_t));
+  NETX_APP_RSC_T *ptNetxFSM = OS_Memalloc(sizeof(NETX_APP_RSC_T));
+  OS_Memset(ptNetxFSM, 0, sizeof(NETX_APP_RSC_T));
 
-  s_ptNetxFSM->currentState   = &NETX_STATE_INIT_DESC;
-  s_ptNetxFSM->previousState  = &NETX_STATE_INIT_DESC;
-  pvParameters                = (void*)s_ptNetxFSM;
+  ptNetxFSM->currentState   = &NETX_STATE_INIT_DESC;
+  ptNetxFSM->previousState  = &NETX_STATE_INIT_DESC;
+  pvParameters                = (void*)ptNetxFSM;
 
   BaseType_t xReturned = pdPASS;
 
@@ -223,18 +223,18 @@ void NetxWorker(void *pvParameters)
   xReturned = xTaskCreate((pdTASK_CODE)NetX_MailboxTask,
                           "MbxTask",
                           configMINIMAL_STACK_SIZE * 3,
-                          s_ptNetxFSM,
+                          ptNetxFSM,
                           (tskIDLE_PRIORITY) + 1,
-                          &s_ptNetxFSM->xMailboxTaskHandle);
+                          &ptNetxFSM->xMailboxTaskHandle);
 
   configASSERT(pdPASS == xReturned);
-  vTaskSuspend(s_ptNetxFSM->xMailboxTaskHandle);
+  vTaskSuspend(ptNetxFSM->xMailboxTaskHandle);
 
-  NetX_OnEnterState(s_ptNetxFSM, NETX_STATE_INIT);
+  NetX_OnEnterState(ptNetxFSM, NETX_STATE_INIT);
 
   while (1)
   {
     /* Main state machine logic, runs the current state function */
-    s_ptNetxFSM->currentState->pfnc(s_ptNetxFSM);
+    ptNetxFSM->currentState->pfnc(ptNetxFSM);
   }
 }

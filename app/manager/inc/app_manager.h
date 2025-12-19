@@ -33,11 +33,11 @@ struct FreeRTOS_THREAD_Ttag
 typedef struct AppResources_Ttag
 {
   AppQueues_t     tAppQueues;
-  NetxRessource_t *ptNetxRsc;
+  NETX_APP_RSC_T *ptNetxRsc;
 } AppResources_t;
 
 void AppManager_Init();
 void AppManager_Run();
-void AppManager_UpdatePeripherals(NetxRessource_t* ptNetxRsc);
+void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc);
 
 #endif /* MANAGER_INC_APP_MANAGER_H_ */

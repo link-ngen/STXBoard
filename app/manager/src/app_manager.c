@@ -44,8 +44,8 @@ void AppManager_Run()
   /* catch errors */
 }
 
-void AppManager_UpdatePeripherals(NetxRessource_t* ptNetxRsc)
+void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc)
 {
-  LED_SendCommand(s_ptAppRsc->tAppQueues.ledQueue, &ptNetxRsc->tLedCmd);
-  LCD_SendCommand(&ptNetxRsc->tLcdCommand);
+  (void)LED_SendCommand(s_ptAppRsc->tAppQueues.ledQueue, &ptNetxRsc->tLedCmd);
+  (void)LCD_SendCommand(&ptNetxRsc->tLcdCommand);
 }
