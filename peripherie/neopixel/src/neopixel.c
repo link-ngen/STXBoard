@@ -53,8 +53,7 @@ static void calcBuf(NEOPXL_RESSOURCE_T* ptNpxlRsc)
   }
 
   // Reset-Latch (mind. 50 µs = ca. 48 Pulse bei 800 kHz)
-  for(uint32_t i = 0; i < 48; ++i)
-    ptNpxlRsc->usaTimBuf[pos++] = 0;
+  memset(&ptNpxlRsc->usaTimBuf[pos], 0, 48);
 }
 
 /**
@@ -85,12 +84,7 @@ void Neopxl_Refresh(NEOPXL_RESSOURCE_T* ptNpxlRsc)
  */
 void Neopxl_Clear(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
-//	for(uint16_t num = 0; num < NEOPXL_NUM_LEDS; ++num)
-//	{
-//	  ptNpxlRsc->tLedBuf[num] = (NEOPXL_RGB_T){0,0,0};
-//	}
-
- memset(ptNpxlRsc->tLedBuf, 0, sizeof(ptNpxlRsc->tLedBuf));
+  memset(ptNpxlRsc->tLedBuf, 0, sizeof(ptNpxlRsc->tLedBuf));
   Neopxl_Refresh(ptNpxlRsc);
 }
 
