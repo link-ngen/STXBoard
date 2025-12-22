@@ -18,16 +18,16 @@ typedef enum {
   LCD_VERTEX_SCREEN,    /* screen like rotate octahedron  */
   LCD_ERROR_SCREEN,     /* screen error */
   LCD_SCREEN_COUNT
-} eLcdScreen;
+} LCD_SCREEN_E;
 
 typedef struct {
-  eLcdScreen eScreen;
+  LCD_SCREEN_E eScreen;
   char pcMessage[32];
   void* pvCustomData;
-} LcdCommand_t;
+} LCD_COMMAND_T;
 
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
-bool LCD_SendCommand(const LcdCommand_t *ptCommand);
+bool LCD_SendCommand(const LCD_COMMAND_T *ptCommand);
 
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

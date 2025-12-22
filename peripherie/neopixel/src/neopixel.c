@@ -85,11 +85,13 @@ void Neopxl_Refresh(NEOPXL_RESSOURCE_T* ptNpxlRsc)
  */
 void Neopxl_Clear(NEOPXL_RESSOURCE_T* ptNpxlRsc)
 {
-	for(uint16_t num = 0; num < NEOPXL_NUM_LEDS; ++num)
-	{
-	  ptNpxlRsc->tLedBuf[num] = (NEOPXL_RGB_T){0,0,0};
-	}
-	Neopxl_Refresh(ptNpxlRsc);
+//	for(uint16_t num = 0; num < NEOPXL_NUM_LEDS; ++num)
+//	{
+//	  ptNpxlRsc->tLedBuf[num] = (NEOPXL_RGB_T){0,0,0};
+//	}
+
+ memset(ptNpxlRsc->tLedBuf, 0, sizeof(ptNpxlRsc->tLedBuf));
+  Neopxl_Refresh(ptNpxlRsc);
 }
 
 /**
@@ -289,6 +291,9 @@ void Neopxl_Rotate_Right(NEOPXL_RESSOURCE_T* ptNpxlRsc, uint8_t refresh)
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
-  HAL_TIM_PWM_Stop_DMA(htim, TIM_CHANNEL_2);
-  DMA_Callback(s_ptNeopxl);
+  if (s_ptNeopxl->ptTim->Instance == htim->Instance)
+  {
+    HAL_TIM_PWM_Stop_DMA(htim, s_ptNeopxl->ulTimChannel);
+    DMA_Callback(s_ptNeopxl);
+  }
 }

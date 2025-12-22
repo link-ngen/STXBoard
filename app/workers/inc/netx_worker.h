@@ -180,7 +180,7 @@ typedef struct NETX_APP_RSC_Ttag
   const NetxStateDescriptor_t     *previousState;
 
   eLedCommand                     tLedCmd;
-  LcdCommand_t                    tLcdCommand;
+  LCD_COMMAND_T                    tLcdCommand;
 
   TaskHandle_t                    xMailboxTaskHandle;
 } NETX_APP_RSC_T;

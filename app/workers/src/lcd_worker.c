@@ -19,7 +19,7 @@
 #define PI_180      0.0174532
 #define FULL_CIRCLE 360
 
-typedef void (*LCD_ScreenFunction_t)(LcdCommand_t*);
+typedef void (*LCD_ScreenFunction_t)(LCD_COMMAND_T*);
 
 static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
     { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
@@ -37,7 +37,7 @@ int16_t angle;
 uint8_t u8x = 10, u8y = 10;
 int8_t s8speedx = 2, s8speedy = 2;
 
-static LcdCommand_t tLcdCommand = { 0 };
+static LCD_COMMAND_T tLcdCommand = { 0 };
 
 static void drawOctahedron(void)
 {
@@ -134,7 +134,7 @@ static void DrawLoadingAnimation(uint8_t x0, uint8_t y0, uint8_t radius, uint32_
   }
 }
 
-static void ShowIdleScreen(LcdCommand_t* ptLcdPaket)
+static void ShowIdleScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_WriteString("Idle screen\n", Font_6x8, White);
@@ -145,7 +145,7 @@ static void ShowIdleScreen(LcdCommand_t* ptLcdPaket)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-static void ShowBootScreen(LcdCommand_t* ptLcdPaket)
+static void ShowBootScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
 
@@ -157,7 +157,7 @@ static void ShowBootScreen(LcdCommand_t* ptLcdPaket)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
+static void ShowVertexScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
 
@@ -184,7 +184,7 @@ static void ShowVertexScreen(LcdCommand_t* ptLcdPaket)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-static void ShowBouncingBallScreen(LcdCommand_t *ptLcdPaket)
+static void ShowBouncingBallScreen(LCD_COMMAND_T *ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_GFX_FillCircle(u8x, u8y, 3, White);
@@ -202,7 +202,7 @@ static void ShowBouncingBallScreen(LcdCommand_t *ptLcdPaket)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-static void ShowConfigScreen(LcdCommand_t* ptLcdPaket)
+static void ShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_WriteString("Checking config.\n", Font_6x8, White);
@@ -211,7 +211,7 @@ static void ShowConfigScreen(LcdCommand_t* ptLcdPaket)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-static void ShowIoExchangeScreen(LcdCommand_t* ptLcdPaket)
+static void ShowIoExchangeScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   for (uint8_t i = 0; i < 13; ++i)
   {
@@ -222,7 +222,7 @@ static void ShowIoExchangeScreen(LcdCommand_t* ptLcdPaket)
   }
 }
 
-static void ShowErrorScreen(LcdCommand_t* ptLcdPaket)
+static void ShowErrorScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_WriteString("Error screen\n", Font_6x8, White);
@@ -232,7 +232,7 @@ static void ShowErrorScreen(LcdCommand_t* ptLcdPaket)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-bool LCD_SendCommand(const LcdCommand_t *ptCommand)
+bool LCD_SendCommand(const LCD_COMMAND_T *ptCommand)
 {
   if(tLcdCommand.eScreen == ptCommand->eScreen  ||  /* guard */
     (ptCommand->eScreen >= LCD_SCREEN_COUNT)    ||

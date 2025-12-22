@@ -8,16 +8,16 @@
 
 #include "main.h"
 
-extern TIM_HandleTypeDef htim3;
-extern DMA_HandleTypeDef hdma_tim3_ch2;
+//extern TIM_HandleTypeDef htim3;
+//extern DMA_HandleTypeDef hdma_tim3_ch2;
 
 #define  NEOPXL_NUM_LEDS	8
 
-#define  NEOPXL_TIM_PRESCALE    0  // F_T3  = 64 MHz (11.90ns)
-#define  NEOPXL_TIM_PERIODE   	125  // F_PWM = 800 kHz (1.25us)
+#define  NEOPXL_TIM_PRESCALE    0
+#define  NEOPXL_TIM_PERIODE   	125   // F_PWM = 800 kHz (1.25us)
 
-#define  NEOPXL_LO_TIME        	45  // 29 * 13,9ns = 0.43us
-#define  NEOPXL_HI_TIME        	85  // 58 * 13.9ns = 0.81us
+#define  NEOPXL_LO_TIME        	45  // 29 * 13,9ns = 0.45us
+#define  NEOPXL_HI_TIME        	85  // 58 * 13.9ns = 0.85us
 
 //--------------------------------------------------------------
 // RGB LED Farbdefinition (3 x 8bit)

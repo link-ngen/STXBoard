@@ -17,7 +17,8 @@
 typedef struct AppQueues_tag
 {
   QueueHandle_t ledQueue;
-} AppQueues_t;
+  QueueHandle_t neopixelQueue;
+} APP_QUEUE_T;
 
 typedef struct FreeRTOS_THREAD_Ttag FreeRTOS_THREAD_T;
 struct FreeRTOS_THREAD_Ttag
@@ -32,7 +33,7 @@ struct FreeRTOS_THREAD_Ttag
 
 typedef struct AppResources_Ttag
 {
-  AppQueues_t     tAppQueues;
+  APP_QUEUE_T     tAppQueues;
   NETX_APP_RSC_T *ptNetxRsc;
 } AppResources_t;
 
