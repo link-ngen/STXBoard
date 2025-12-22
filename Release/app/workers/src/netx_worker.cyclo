@@ -1,6 +1,0 @@
-../app/workers/src/netx_worker.c:355:13:NetX_FSMTransition	5
-../app/workers/src/netx_worker.c:191:6:State_NetxInit	4
-../app/workers/src/netx_worker.c:258:6:State_NetxOP	4
-../app/workers/src/netx_worker.c:298:6:State_NetxError	3
-../app/workers/src/netx_worker.c:224:6:State_NetxPreOP	11
-../app/workers/src/netx_worker.c:367:6:NetxWorker	1

@@ -21,11 +21,6 @@ static void Neopxl_InitLUT(void)
   }
 }
 
-static void DMA_Callback(NEOPXL_RESSOURCE_T* ptNpxlRsc)
-{
-  ptNpxlRsc->fDmaReady = 1;
-}
-
 /**
  * Internal function, calculates the HI or LO values for the 800 kHz WS2812 signal and puts them into a buffer for the Timer-DMA
  *
@@ -288,6 +283,6 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
   if (s_ptNeopxl->ptTim->Instance == htim->Instance)
   {
     HAL_TIM_PWM_Stop_DMA(htim, s_ptNeopxl->ulTimChannel);
-    DMA_Callback(s_ptNeopxl);
+    s_ptNeopxl->fDmaReady = 1;
   }
 }

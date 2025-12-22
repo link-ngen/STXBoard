@@ -1,8 +1,0 @@
-../app/workers/src/lcd_worker.c:225:13:ShowErrorScreen	1
-../app/workers/src/lcd_worker.c:148:13:ShowBootScreen	1
-../app/workers/src/lcd_worker.c:137:13:ShowIdleScreen	1
-../app/workers/src/lcd_worker.c:187:13:ShowBouncingBallScreen	3
-../app/workers/src/lcd_worker.c:214:13:ShowIoExchangeScreen	2
-../app/workers/src/lcd_worker.c:205:13:ShowConfigScreen	3
-../app/workers/src/lcd_worker.c:235:6:LCD_SendCommand	3
-../app/workers/src/lcd_worker.c:248:6:LCD_Worker	2

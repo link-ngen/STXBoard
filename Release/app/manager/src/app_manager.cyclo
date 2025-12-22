@@ -1,3 +1,0 @@
-../app/manager/src/app_manager.c:14:6:AppManager_Init	3
-../app/manager/src/app_manager.c:41:6:AppManager_Run	1
-../app/manager/src/app_manager.c:47:6:AppManager_UpdatePeripherals	1

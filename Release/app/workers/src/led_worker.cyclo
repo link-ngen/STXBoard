@@ -1,7 +1,0 @@
-../app/workers/src/led_worker.c:33:13:Led_ErrorOff	1
-../app/workers/src/led_worker.c:38:13:Led_ErrorOn	1
-../app/workers/src/led_worker.c:14:13:Led_ConfigBlink	1
-../app/workers/src/led_worker.c:21:13:Led_RunOn	1
-../app/workers/src/led_worker.c:27:13:Led_Configured	1
-../app/workers/src/led_worker.c:54:6:LED_SendCommand	7
-../app/workers/src/led_worker.c:88:6:LED_Worker	3
