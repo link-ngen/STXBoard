@@ -10,24 +10,23 @@
 #include "lcd_worker.h"
 #include "neopixel_worker.h"
 
-static APP_MANANGER_RSC_T *s_ptAppRsc;
+static APP_MANANGER_RSC_T s_tAppRsc;
 
 #define LED_QUEUE_LEN     1
 #define NEOPXL_QUEUE_LEN  1
 
 void AppManager_Init()
 {
-  s_ptAppRsc = OS_Memalloc(sizeof(APP_MANANGER_RSC_T));
-  OS_Memset(s_ptAppRsc, 0, sizeof(APP_MANANGER_RSC_T));
+  OS_Memset(&s_tAppRsc, 0, sizeof(APP_MANANGER_RSC_T));
 
-  s_ptAppRsc->tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
-  s_ptAppRsc->tAppQueues.neopixelQueue = xQueueCreate(NEOPXL_QUEUE_LEN, sizeof(NEOPXL_DATA_ITEM_T));
+  s_tAppRsc.tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
+  s_tAppRsc.tAppQueues.neopixelQueue = xQueueCreate(NEOPXL_QUEUE_LEN, sizeof(NEOPXL_DATA_ITEM_T));
 
   FreeRTOS_THREAD_T taskConfigs[] = {
-    { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)s_ptAppRsc->ptNetxRsc, (tskIDLE_PRIORITY) + 2, NULL },
+    { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)s_tAppRsc.ptNetxRsc, (tskIDLE_PRIORITY) + 2, NULL },
     { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 3, NULL, (tskIDLE_PRIORITY) + 0, NULL },
-    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)s_ptAppRsc->tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 3, NULL },
-    { (pdTASK_CODE)Neopxl_Worker, "Neopixel Task", configMINIMAL_STACK_SIZE * 2, (void*)s_ptAppRsc->tAppQueues.neopixelQueue, (tskIDLE_PRIORITY) + 1, NULL },
+    { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)s_tAppRsc.tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 3, NULL },
+    { (pdTASK_CODE)Neopxl_Worker, "Neopixel Task", configMINIMAL_STACK_SIZE * 2, (void*)s_tAppRsc.tAppQueues.neopixelQueue, (tskIDLE_PRIORITY) + 1, NULL },
   };
 
   BaseType_t xReturned = pdPASS;
@@ -54,4 +53,18 @@ void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc)
 {
   (void)LED_SendCommand(&ptNetxRsc->tLedCmd);
   (void)LCD_SendCommand(&ptNetxRsc->tLcdCommand);
+}
+
+void AppManager_UpdateNeopixel(NETX_APP_RSC_T* ptNetxRsc)
+{
+  NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->abActorData;
+  (void)Neopxl_UpdateData(ptNeopxlData);
+}
+
+void AppManager_Call_Flashing_Mode(NETX_APP_RSC_T* ptNetxRsc)
+{
+  NEOPXL_DATA_ITEM_T tNeopxlData;
+  tNeopxlData.eMode = NEOPXL_FLASHING_2_MODE;
+  tNeopxlData.tColor = (NEOPXL_RGB_T){ NEOPXL_LOW_BRIGHTNESS, 0, 0 };
+  Neopxl_UpdateData(&tNeopxlData);
 }

@@ -286,17 +286,3 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
     s_ptNeopxl->fDmaReady = 1;
   }
 }
-
-uint8_t Neopxl_Are_Pixel_Off(NEOPXL_RESSOURCE_T* ptNpxlRsc)
-{
-  const NEOPXL_RGB_T tZeroLed = {0, 0, 0};
-
-  for(uint32_t i = 0; i < NEOPXL_NUM_LEDS; ++i)
-  {
-    if(memcmp(&ptNpxlRsc->tLedBuf[i], &tZeroLed, sizeof(NEOPXL_RGB_T)) != 0)
-    {
-      return 0;
-    }
-  }
-  return 1;
-}

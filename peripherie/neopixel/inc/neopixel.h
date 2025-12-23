@@ -8,9 +8,6 @@
 
 #include "main.h"
 
-//extern TIM_HandleTypeDef htim3;
-//extern DMA_HandleTypeDef hdma_tim3_ch2;
-
 #define  NEOPXL_NUM_LEDS	8
 
 #define  NEOPXL_TIM_PRESCALE    0
@@ -60,6 +57,5 @@ void Neopxl_Shift_Left(NEOPXL_RESSOURCE_T* ptNpxlRsc, uint8_t refresh);
 void Neopxl_Shift_Right(NEOPXL_RESSOURCE_T* ptNpxlRsc, uint8_t refresh);
 void Neopxl_Rotate_Left(NEOPXL_RESSOURCE_T* ptNpxlRsc, uint8_t refresh);
 void Neopxl_Rotate_Right(NEOPXL_RESSOURCE_T* ptNpxlRsc, uint8_t refresh);
-uint8_t Neopxl_Are_Pixel_Off(NEOPXL_RESSOURCE_T* ptNpxlRsc);
 
 #endif // __NEOPIXEL_H__

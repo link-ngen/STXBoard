@@ -31,7 +31,7 @@ struct FreeRTOS_THREAD_Ttag
   TaskHandle_t        hThread;      // Handle to the task object.
 };
 
-typedef struct AppResources_Ttag
+typedef struct APP_MANANGER_RSC_Ttag
 {
   APP_QUEUE_T     tAppQueues;
   NETX_APP_RSC_T *ptNetxRsc;
@@ -40,5 +40,6 @@ typedef struct AppResources_Ttag
 void AppManager_Init();
 void AppManager_Run();
 void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc);
-
+void AppManager_UpdateNeopixel(NETX_APP_RSC_T* ptNetxRsc);
+void AppManager_Call_Flashing_Mode(NETX_APP_RSC_T* ptNetxRsc);
 #endif /* MANAGER_INC_APP_MANAGER_H_ */

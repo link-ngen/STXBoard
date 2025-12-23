@@ -138,13 +138,10 @@ typedef struct NETX_PROTOCOL_RSC_Ttag
 
   bool                             fDeviceIsRunning;    /* device was configured */
 
-//  PROCESS_DATA_INPUT_T             tInputData;          /** Consumed process data. Data that is received from the PLC. */
-//  PROCESS_DATA_OUTPUT_T            tOutputData;         /** Produced process data. Data that is sent to the PLC.       */
-
   uint8_t abActorData[PNS_PROCESS_DATA_INPUT_SIZE];       /** Consumed process data. Data that is received from the PLC. */
   uint8_t abSensorData[PNS_PROCESS_DATA_OUTPUT_SIZE];     /** Produced process data. Data that is sent to the PLC.       */
 
-} NETX_PROTOCOL_RSC_T; /* for example profinet data resource */
+} NETX_PROTOCOL_RSC_T; /* for example real time Ethernet data resource */
 
 typedef struct NETX_APP_RSC_Ttag
 {
@@ -171,7 +168,6 @@ int32_t NetX_ConfigureChannels(NETX_APP_RSC_T* ptNetxRsc);
 void    NetX_CallCommMailboxRoutine(NETX_APP_RSC_T* ptNetxRsc);
 void    NetX_AllChannels_Close(NETX_APP_RSC_T* ptNetxRsc);
 uint32_t Netx_ReadNetworkState(NETX_APP_RSC_T *ptNetxRsc);
-int32_t NetX_ProcessIOData(NETX_APP_RSC_T *ptNetxRsc);
 
 /* netx worker */
 void NetxWorker(void *pvParameters);

@@ -9,7 +9,7 @@
 #include "SerialDPMInterface.h"
 #include "app_config.h"
 
-static PDEVICEINSTANCE ptDevInstance;
+//static PDEVICEINSTANCE ptDevInstance;
 
 static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutInMs, NETX_APP_RSC_T *ptNetxRsc)
 {
@@ -50,14 +50,16 @@ static bool isCookieAvailable(PDEVICEINSTANCE ptDevInstance, uint32_t ulTimeoutI
   return fCookieAvailable;
 }
 
+static DEVICEINSTANCE tDevInstance;
+
 int32_t InitializeToolkit(NETX_APP_RSC_T *ptNetxRsc)
 {
   int32_t lRet = cifXTKitInit();
 
   if(CIFX_NO_ERROR == lRet)
   {
-    ptDevInstance = (PDEVICEINSTANCE) OS_Memalloc(sizeof(*ptDevInstance));
-    OS_Memset(ptDevInstance, 0, sizeof(*ptDevInstance));
+    //ptDevInstance = (PDEVICEINSTANCE) OS_Memalloc(sizeof(*ptDevInstance));
+    OS_Memset(&tDevInstance, 0, sizeof(tDevInstance));
 
     /** Set trace level of toolkit */
     g_ulTraceLevel = TRACE_LEVEL_ERROR |
@@ -69,22 +71,22 @@ int32_t InitializeToolkit(NETX_APP_RSC_T *ptNetxRsc)
      for the toolkit.
      NOTE: The irq number are for information use only, so we skip them here.
      Interrupt is currently not supported and ignored, so we don't need to set it */
-    ptDevInstance->fPCICard = 0;
-    ptDevInstance->pvOSDependent = ptDevInstance;
-    ptDevInstance->ulDPMSize = 0x8000;   // 32K
-    ptDevInstance->ulIrqNumber = 7;
-    ptDevInstance->eDeviceType = eCIFX_DEVICE_FLASH_BASED;
-    OS_Strncpy(ptDevInstance->szName, "cifX0", sizeof(ptDevInstance->szName));
+    tDevInstance.fPCICard = 0;
+    tDevInstance.pvOSDependent = &tDevInstance;
+    tDevInstance.ulDPMSize = 0x8000;   // 32K
+    tDevInstance.ulIrqNumber = 7;
+    tDevInstance.eDeviceType = eCIFX_DEVICE_FLASH_BASED;
+    OS_Strncpy(tDevInstance.szName, "cifX0", sizeof(tDevInstance.szName));
 
     /** we know here that netX firmware is flash based, therefore we check if it starts up
      ** by comparing cookie at DPM address 0x00 is valid.*/
     do
     {
-      SerialDPM_Init(ptDevInstance);
-    } while(false == isCookieAvailable(ptDevInstance, 100, ptNetxRsc));
+      SerialDPM_Init((PDEVICEINSTANCE)&tDevInstance);
+    } while(false == isCookieAvailable((PDEVICEINSTANCE)&tDevInstance, 100, ptNetxRsc));
 
     /* Add the device to the toolkits handled device list */
-    lRet = cifXTKitAddDevice(ptDevInstance);
+    lRet = cifXTKitAddDevice((PDEVICEINSTANCE)&tDevInstance);
 
     /** If it succeeded do device tests */
     if(CIFX_NO_ERROR != lRet)
@@ -247,12 +249,12 @@ uint32_t Netx_ReadNetworkState(NETX_APP_RSC_T *ptNetxRsc)
   return ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc.pfnReadNetworkState(ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]);
 }
 
-int32_t NetX_ProcessIOData(NETX_APP_RSC_T *ptNetxRsc)
-{
-  int32_t lRet = CIFX_NO_ERROR;
-  NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->abActorData;
-
-  Neopxl_UpdateData(ptNeopxlData);
-
-  return lRet;
-}
+//int32_t NetX_ProcessIOData(NETX_APP_RSC_T *ptNetxRsc)
+//{
+//  int32_t lRet = CIFX_NO_ERROR;
+//  NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->abActorData;
+//
+//  Neopxl_UpdateData(ptNeopxlData);
+//
+//  return lRet;
+//}

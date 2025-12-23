@@ -13,7 +13,6 @@
 #define IO_CYCLE_TIME     4   /* in milli seconds */
 
 extern NETX_PROTOCOL_DESC_T g_tRealtimeEthernetHandler;
-extern NETX_PROTOCOL_DESC_T g_tNetworkServicesHandlers;
 
 static void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc);
 static void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc);
@@ -64,6 +63,7 @@ static void NetX_FSMTransition(NETX_APP_RSC_T *ptNetxRsc, const NetxStateDescrip
   AppManager_UpdatePeripherals(ptNetxRsc);
 }
 
+static NETX_PROTOCOL_RSC_T tNetxProcRsc;
 void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
 {
   PRINTF("---------- NetX Init ----------" NEWLINE);
@@ -72,10 +72,12 @@ void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
 
   if (CIFX_NO_ERROR == lRet)
   {
-    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL] = (NETX_PROTOCOL_RSC_T*)OS_Memcalloc(1, sizeof(NETX_PROTOCOL_RSC_T));
+    OS_Memset(&tNetxProcRsc, 0, sizeof(NETX_PROTOCOL_RSC_T));
+    ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL] = (NETX_PROTOCOL_RSC_T*)&tNetxProcRsc;
     ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc = g_tRealtimeEthernetHandler;
 
 #if USED_COMMUNICATION_CHANNELS >= 2
+#error "g_tNetworkServicesHandlers must be explicitly implemented!"
     ptNetxRsc->atCommChannels[1] = (NETX_PROTOCOL_RSC_T*)OS_Memcalloc(1, sizeof(NETX_PROTOCOL_RSC_T));
     ptNetxRsc->atCommChannels[1]->tProtocolDesc = g_tNetworkServicesHandlers;
 #endif
@@ -152,17 +154,12 @@ void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
     case CIFX_NO_ERROR:
       /* Process input data and prepare for the next write to the field bus */
       // TODO: process io data. Send input data to other task and get the output data from other task
-      NetX_ProcessIOData(ptNetxRsc);
-
+      AppManager_UpdateNeopixel(ptNetxRsc);
       ptNetxStateDesc = &NETX_STATE_OP_DESC;
       break;
 
     case CIFX_DEV_NO_COM_FLAG:
-      NEOPXL_DATA_ITEM_T tNeopxlData;
-      tNeopxlData.eMode = NEOPXL_FLASHING_1_MODE;
-      tNeopxlData.tColor = (NEOPXL_RGB_T){ NEOPXL_LOW_BRIGHTNESS, 0, 0 };
-      Neopxl_UpdateData(&tNeopxlData);
-
+      AppManager_Call_Flashing_Mode(ptNetxRsc);
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
       break;
 
@@ -213,14 +210,13 @@ static void NetX_MailboxTask(void* pvParameters)
   }
 }
 
+static NETX_APP_RSC_T tNetxFSM;
+
 void NetxWorker(void *pvParameters)
 {
-  NETX_APP_RSC_T *ptNetxFSM = OS_Memalloc(sizeof(NETX_APP_RSC_T));
-  OS_Memset(ptNetxFSM, 0, sizeof(NETX_APP_RSC_T));
-
-  ptNetxFSM->currentState   = &NETX_STATE_INIT_DESC;
-  ptNetxFSM->previousState  = &NETX_STATE_INIT_DESC;
-  pvParameters                = (void*)ptNetxFSM;
+  tNetxFSM.currentState   = &NETX_STATE_INIT_DESC;
+  tNetxFSM.previousState  = &NETX_STATE_INIT_DESC;
+  pvParameters                = (void*)&tNetxFSM;
 
   BaseType_t xReturned = pdPASS;
 
@@ -228,18 +224,18 @@ void NetxWorker(void *pvParameters)
   xReturned = xTaskCreate((pdTASK_CODE)NetX_MailboxTask,
                           "MbxTask",
                           configMINIMAL_STACK_SIZE * 3,
-                          ptNetxFSM,
+                          &tNetxFSM,
                           (tskIDLE_PRIORITY) + 1,
-                          &ptNetxFSM->xMailboxTaskHandle);
+                          &tNetxFSM.xMailboxTaskHandle);
 
   configASSERT(pdPASS == xReturned);
-  vTaskSuspend(ptNetxFSM->xMailboxTaskHandle);
+  vTaskSuspend(tNetxFSM.xMailboxTaskHandle);
 
-  NetX_OnEnterState(ptNetxFSM, NETX_STATE_INIT);
+  NetX_OnEnterState(&tNetxFSM, NETX_STATE_INIT);
 
   while (1)
   {
     /* Main state machine logic, runs the current state function */
-    ptNetxFSM->currentState->pfnc(ptNetxFSM);
+    tNetxFSM.currentState->pfnc(&tNetxFSM);
   }
 }
