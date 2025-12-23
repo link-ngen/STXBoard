@@ -4,120 +4,55 @@
  *  Created on: 19.12.2025
  *      Author: nnguyen
  */
-#include <stdbool.h>
+#include <string.h>
 #include "neopixel_worker.h"
 
 #include "tim.h"
 #include "FreeRTOS.h"
 #include "queue.h"
 
+typedef struct
+{
+  union
+  {
+    /* Rainbow Mode */
+    struct
+    {
+      uint16_t colorIndex;
+      uint16_t ledIndex;
+      uint8_t cycles;
+    } rainbow;
+
+    /* Blinking/Flashing mode */
+    struct
+    {
+      bool bOn;             // current on/off
+      uint8_t flashCount;   // num of flash
+      uint8_t maxFlashes;
+    } blink;
+
+    /* Continuous Mode Cache */
+    struct
+    {
+      NEOPXL_RGB_T lastColor;
+      bool initialized;
+    } continuous;
+  } modus;
+
+  uint32_t ulLastUpdate;
+  uint32_t ulPhaseDuration;
+  NEOPXL_MODE_E eCurrentMode;
+} NEOPXL_MODE_STATE_T;
+
+static NEOPXL_MODE_STATE_T s_tModeState;
 static NEOPXL_DATA_ITEM_T *s_ptNeopxl;
 static QueueHandle_t s_pxQueue;
 
 typedef void (*NeopxlHandler)(NEOPXL_RESSOURCE_T *ptNpxlRsc);
 
-/* Neopixel modus */
-static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  typedef struct
-  {
-    NEOPXL_RGB_T tLastColor;
-    bool fInitialized;
-  } NEOPXL_CONT_STATE_T;
-
-  static NEOPXL_CONT_STATE_T tPreviousState = { 0 };
-  bool fUpdate = false;
-
-  if (!tPreviousState.fInitialized ||
-    tPreviousState.tLastColor.red != s_ptNeopxl->tColor.red ||
-    tPreviousState.tLastColor.green != s_ptNeopxl->tColor.green ||
-    tPreviousState.tLastColor.blue != s_ptNeopxl->tColor.blue)
-  {
-    fUpdate = true;
-    tPreviousState.fInitialized = true;
-    tPreviousState.tLastColor = s_ptNeopxl->tColor;
-  }
-
-  uint8_t fIsNeopixelOff = Neopxl_Are_Pixel_Off(ptNpxlRsc);
-  if (fUpdate || (fIsNeopixelOff == 1))
-  {
-    Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  }
-  vTaskDelay(pdMS_TO_TICKS(1));
-}
-
-static void Neopxl_Blinking_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(500));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(500));
-}
-
-static void Neopxl_Blinking_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(250));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(250));
-}
-
-static void Neopxl_Blinking_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(167));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(167));
-}
-
-static void Neopxl_Flashing_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(2000));
-}
-
-static void Neopxl_Flashing_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(200));
-
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(1000));
-}
-
-static void Neopxl_Flashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
-{
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(200));
-
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(200));
-
-  Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-
-  Neopxl_Clear(ptNpxlRsc);
-  vTaskDelay(pdMS_TO_TICKS(1000));
-}
-
+/**
+ * Color wheel function
+ */
 static NEOPXL_RGB_T Neopxl_Wheel(uint8_t bWheelPos)
 {
   static NEOPXL_RGB_T tRetColor = { 0 };
@@ -144,58 +79,223 @@ static NEOPXL_RGB_T Neopxl_Wheel(uint8_t bWheelPos)
   return tRetColor;
 }
 
+/* Initializes state for a new mode */
+static void Neopxl_InitializeModeState(NEOPXL_MODE_E eNewMode)
+{
+  memset(&s_tModeState, 0, sizeof(s_tModeState));
+  s_tModeState.eCurrentMode = eNewMode;
+  s_tModeState.ulLastUpdate = xTaskGetTickCount();
+
+  switch (eNewMode)
+  {
+  case NEOPXL_CONTINUOUS_MODE:
+    s_tModeState.modus.continuous.initialized = false;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000);
+    break;
+
+  case NEOPXL_BLINKING_1_MODE:
+    s_tModeState.modus.blink.bOn = true;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(500);
+    break;
+
+  case NEOPXL_BLINKING_2_MODE:
+    s_tModeState.modus.blink.bOn = true;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(250);
+    break;
+
+  case NEOPXL_BLINKING_3_MODE:
+    s_tModeState.modus.blink.bOn = true;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(167);
+    break;
+
+  case NEOPXL_FLASHING_1_MODE:
+    s_tModeState.modus.blink.bOn = true;
+    s_tModeState.modus.blink.maxFlashes = 1;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(100);
+    break;
+
+  case NEOPXL_FLASHING_2_MODE:
+    s_tModeState.modus.blink.bOn = true;
+    s_tModeState.modus.blink.flashCount = 0;
+    s_tModeState.modus.blink.maxFlashes = 2;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(100);
+    break;
+
+  case NEOPXL_FLASHING_3_MODE:
+    s_tModeState.modus.blink.bOn = true;
+    s_tModeState.modus.blink.flashCount = 0;
+    s_tModeState.modus.blink.maxFlashes = 3;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(100);
+    break;
+
+  case NEOPXL_RAINBOW_ROTATING_MODE:
+    s_tModeState.modus.rainbow.colorIndex = 0;
+    s_tModeState.modus.rainbow.ledIndex = 0;
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(5);
+    break;
+
+  default:
+    s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(10);
+    break;
+  }
+}
+
+/* Checks whether update time has been reached */
+static bool Neopxl_IsTimeForUpdate(void)
+{
+  uint32_t ulCurrentTime = xTaskGetTickCount();
+  return ((ulCurrentTime - s_tModeState.ulLastUpdate) >= s_tModeState.ulPhaseDuration);
+}
+
+/* Neopixel modus */
+static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  if(!s_tModeState.modus.continuous.initialized ||
+      s_tModeState.modus.continuous.lastColor.red != s_ptNeopxl->tColor.red ||
+      s_tModeState.modus.continuous.lastColor.green != s_ptNeopxl->tColor.green ||
+      s_tModeState.modus.continuous.lastColor.blue != s_ptNeopxl->tColor.blue)
+  {
+    Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
+
+    s_tModeState.modus.continuous.initialized = true;
+    s_tModeState.modus.continuous.lastColor = s_ptNeopxl->tColor;
+  }
+
+  s_tModeState.ulLastUpdate = xTaskGetTickCount();
+  s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000); // 1s Polling
+}
+
+/* Generic Blinking Handler */
+static void Neopxl_Generic_Blink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTime, uint32_t ulOffTime)
+{
+    s_tModeState.ulLastUpdate = xTaskGetTickCount();
+
+    if (s_tModeState.modus.blink.bOn)
+    {
+        Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
+        s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(ulOnTime);
+    }
+    else
+    {
+        Neopxl_Clear(ptNpxlRsc);
+        s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(ulOffTime);
+    }
+
+    s_tModeState.modus.blink.bOn = !s_tModeState.modus.blink.bOn;
+}
+
+static void Neopxl_Blinking_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  Neopxl_Generic_Blink(ptNpxlRsc, 500, 500);
+}
+
+static void Neopxl_Blinking_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  Neopxl_Generic_Blink(ptNpxlRsc, 250, 250);
+}
+
+static void Neopxl_Blinking_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  Neopxl_Generic_Blink(ptNpxlRsc, 167, 167);
+}
+
+/* Generic Flashing Handler */
+static void Neopxl_Generic_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t flashPattern)
+{
+  s_tModeState.ulLastUpdate = xTaskGetTickCount();
+
+  static const uint16_t ausPatterns[][6] = {
+    // {ON, PAUSE} of FLASHING_1_MODE
+    { 100, 2000, 0, 0, 0, 0 },
+    // {ON1, PAUSE1, ON2, PAUSE2} of FLASHING_2_MODE
+    { 100, 200, 100, 1000, 0, 0 },
+    // {ON1, PAUSE1, ON2, PAUSE2, ON3, PAUSE3} of FLASHING_3_MODE
+    { 100, 200, 100, 200, 100, 1000 } };
+
+  const uint16_t *pusPattern = ausPatterns[flashPattern];
+
+  uint8_t currentPhase = s_tModeState.modus.blink.flashCount;
+  uint8_t maxPhases = (flashPattern + 1) * 2;
+
+  if(currentPhase >= maxPhases)
+  {
+    currentPhase = 0;
+    s_tModeState.modus.blink.flashCount = 0;
+  }
+
+  if(currentPhase % 2 == 0)
+  {
+    // ON-Phase
+    Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
+  }
+  else
+  {
+    // OFF-Phase
+    Neopxl_Clear(ptNpxlRsc);
+  }
+
+  s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(pusPattern[currentPhase]);
+  s_tModeState.modus.blink.flashCount++;
+}
+
+static void Neopxl_Flashing_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  Neopxl_Generic_Flash(ptNpxlRsc, 0);
+}
+
+static void Neopxl_Flashing_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  Neopxl_Generic_Flash(ptNpxlRsc, 1);
+}
+
+static void Neopxl_Flashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+{
+  Neopxl_Generic_Flash(ptNpxlRsc, 2);
+}
+
 static void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  NEOPXL_RGB_T tNeopxl;
-  for (uint16_t j = 0; j < 256 * 5; ++j) // 5 cycles of all colors on wheel
+  s_tModeState.ulLastUpdate = xTaskGetTickCount();
+
+  NEOPXL_RGB_T tNeopxl = Neopxl_Wheel(((s_tModeState.modus.rainbow.ledIndex * 256 / NEOPXL_NUM_LEDS) + s_tModeState.modus.rainbow.colorIndex) & 255);
+
+  Neopxl_One_RGB(ptNpxlRsc, s_tModeState.modus.rainbow.ledIndex, tNeopxl, 0);
+  s_tModeState.modus.rainbow.ledIndex++;
+
+  if(s_tModeState.modus.rainbow.ledIndex >= NEOPXL_NUM_LEDS)
   {
-    for (uint16_t i = 0; i < NEOPXL_NUM_LEDS; ++i)
-    {
-      tNeopxl = Neopxl_Wheel(((i * 256 / NEOPXL_NUM_LEDS) + j) & 255);
-      Neopxl_One_RGB(ptNpxlRsc, i, tNeopxl, 0);
-    }
+    s_tModeState.modus.rainbow.ledIndex = 0;
     Neopxl_Refresh(ptNpxlRsc);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    s_tModeState.modus.rainbow.colorIndex++;
+
+    if(s_tModeState.modus.rainbow.colorIndex >= 256 * 5)
+    {
+      s_tModeState.modus.rainbow.colorIndex = 0;
+      s_tModeState.modus.rainbow.cycles++;
+    }
   }
+
+  s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(5);
 }
 
 bool Neopxl_UpdateData(const NEOPXL_DATA_ITEM_T *ptNeopxlData)
 {
-  if (ptNeopxlData == NULL)
+  if (ptNeopxlData == NULL || ptNeopxlData->eMode >= NEOPXL_UNKNOWN_MODE)
   {
     return false;
   }
-
-//  if (ptNeopxlData->eMode == s_ptNeopxl->eMode)
-//  {
-//    return true;
-//  }
-
   NEOPXL_DATA_ITEM_T tTempData = *ptNeopxlData;
-  if(xQueueOverwrite(s_pxQueue, &tTempData) == pdPASS)
-  {
-    return true;
-  }
-
-//  if (xQueueSend(s_pxQueue, (void*)ptNeopxlData, pdMS_TO_TICKS(10)) != pdPASS)
-//  {
-//    NEOPXL_DATA_ITEM_T tTempData;
-//    xQueueReceive(s_pxQueue, (void*)&tTempData, 0);
-//
-//    return (xQueueSend(s_pxQueue, (void*)ptNeopxlData, 0) == pdPASS);
-//  }
-  return true;
+  return (xQueueOverwrite(s_pxQueue, &tTempData) == pdPASS);
 }
 
 void Neopxl_Worker(void *pvParameters)
 {
   s_pxQueue = (QueueHandle_t)pvParameters;
-  NEOPXL_DATA_ITEM_T tDataValue = { 0 };
 
-  tDataValue.eMode       = NEOPXL_BLINKING_1_MODE;
-  tDataValue.tColor      = (NEOPXL_RGB_T){ 0, NEOPXL_LOW_BRIGHTNESS, 0 };
-
-  s_ptNeopxl = &tDataValue;
+  NEOPXL_DATA_ITEM_T tNewData;
+  NEOPXL_DATA_ITEM_T tCurrentData = { .eMode = NEOPXL_BLINKING_1_MODE,
+                                      .tColor = { 0, 0, NEOPXL_LOW_BRIGHTNESS } };
+  s_ptNeopxl = &tCurrentData;
 
   NeopxlHandler neopxlHandlers[] = {
     [NEOPXL_CONTINUOUS_MODE] = Neopxl_Continuous,
@@ -213,18 +313,34 @@ void Neopxl_Worker(void *pvParameters)
   tNeopxlRsc.ulTimChannel = TIM_CHANNEL_2;
 
   Neopxl_Init(&tNeopxlRsc);
+  Neopxl_InitializeModeState(tCurrentData.eMode);
 
-  while (1)
+  while(1)
   {
     /* Check if we have new data from the PLC */
-    if (xQueueReceive(s_pxQueue, &tDataValue, 0) == pdTRUE)
+    if(xQueueReceive(s_pxQueue, &tNewData, 0) == pdTRUE)
     {
-      if (tDataValue.eMode < NEOPXL_UNKNOWN_MODE)
+      if(tNewData.eMode < NEOPXL_UNKNOWN_MODE)
       {
-        /* update new data  */
-        s_ptNeopxl = &tDataValue;
+        // change state?
+        if(tCurrentData.eMode != tNewData.eMode)
+        {
+          Neopxl_Clear(&tNeopxlRsc);
+          Neopxl_InitializeModeState(tNewData.eMode);
+        }
+
+        tCurrentData = tNewData;
+        s_ptNeopxl = &tCurrentData;
       }
     }
-    neopxlHandlers[s_ptNeopxl->eMode](&tNeopxlRsc);
+
+    // check if it's time for update
+    if(Neopxl_IsTimeForUpdate())
+    {
+      neopxlHandlers[s_ptNeopxl->eMode](&tNeopxlRsc);
+    }
+
+    // delay for cpu
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }

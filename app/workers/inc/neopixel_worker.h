@@ -8,6 +8,7 @@
 #ifndef WORKERS_INC_NEOPIXEL_WORKER_H_
 #define WORKERS_INC_NEOPIXEL_WORKER_H_
 
+#include <stdbool.h>
 #include "neopixel.h"
 
 typedef enum
@@ -37,6 +38,8 @@ typedef struct NEOPXL_DATA_ITEM_Ttag
   NEOPXL_RGB_T tColor;              /* 3 Byte */
 } NEOPXL_DATA_ITEM_T;
 
+
+/* ================= PUBLIC API ================= */
 void Neopxl_Worker(void *pvParameters); /* params queue and command */
 bool Neopxl_UpdateData(const NEOPXL_DATA_ITEM_T *ptNeopxlData);
 
