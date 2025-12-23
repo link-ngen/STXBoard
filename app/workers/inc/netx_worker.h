@@ -18,12 +18,16 @@
 
 #include "led_worker.h"
 #include "lcd_worker.h"
+#include "neopixel_worker.h"
 
 #include "PacketCommunication.h"
 
 #define REALTIME_ETH_CHANNEL 0
 /* netX firmware defines */
 #define  USED_COMMUNICATION_CHANNELS  REALTIME_ETH_CHANNEL + 1
+
+#define PNS_PROCESS_DATA_INPUT_SIZE   6
+#define PNS_PROCESS_DATA_OUTPUT_SIZE  10
 
 struct NETX_APP_RSC_Ttag;
 typedef void (*NetxStateFunction_t)(struct NETX_APP_RSC_Ttag *ptNetxRsc);
@@ -119,34 +123,6 @@ typedef __HIL_PACKED_PRE struct NETX_COMM_CHANNEL_HANDLER_Ttag
   NetxComm_DeInitializeCallback  pfnDeInitialize;
 } __HIL_PACKED_POST NETX_PROTOCOL_DESC_T;
 
-typedef __HIL_PACKED_PRE struct PROCESS_DATA_INPUT_Ttag /* Consumed data (PLC Output) */
-{
-  uint16_t usRotationAngle_Input;   /* angle for the rotation of the lcd object */
-  uint8_t  bReserved_Input;         /* later for the neopixel command */
-  uint8_t  bReserved2_Input;        /* reserved for later application */
-
-  #define APP_CYCLE_COUNTER_COUNT_UP    0
-  #define APP_CYCLE_COUNTER_COUNT_DOWN  1
-  uint8_t  bCyclicCounter_Direction;  /* handling of global counter variable (usCyclic_Counter): up/down counter
-                                         0: count up,
-                                         1: count down */
-
-  uint8_t  bCyclicCounter_Speed; /* handling of global counter variable (usCyclic_Counter): fast/slow increment/decrement
-                                      0: the counter is not incremented/decremented at all (the counter will show its default value 0xFFFF)
-                                    > 0: number of cycles it takes to increment/decrement the counter by one. */
-} __HIL_PACKED_POST PROCESS_DATA_INPUT_T;
-
-typedef __HIL_PACKED_PRE struct PROCESS_DATA_OUTPUT_Ttag /* Produced data (PLC Input) */
-{
-  uint16_t usCyclicCounter;   /* global counter variable */
-  uint16_t usSensor_1_Output;
-  uint8_t  bSensor_1_State;
-  uint16_t usSensor_2_Output;
-  uint8_t  bSensor_2_State;
-  uint8_t  bActuator_1_State;
-  uint8_t  bActuator_2_State;
-} __HIL_PACKED_POST PROCESS_DATA_OUTPUT_T;
-
 /** A communication channel struct.
  * This struct holds data related to one channel handler.
  */
@@ -162,8 +138,11 @@ typedef struct NETX_PROTOCOL_RSC_Ttag
 
   bool                             fDeviceIsRunning;    /* device was configured */
 
-  PROCESS_DATA_INPUT_T             tInputData;          /** Consumed process data. Data that is received from the PLC. */
-  PROCESS_DATA_OUTPUT_T            tOutputData;         /** Produced process data. Data that is sent to the PLC.       */
+//  PROCESS_DATA_INPUT_T             tInputData;          /** Consumed process data. Data that is received from the PLC. */
+//  PROCESS_DATA_OUTPUT_T            tOutputData;         /** Produced process data. Data that is sent to the PLC.       */
+
+  uint8_t abActorData[PNS_PROCESS_DATA_INPUT_SIZE];       /** Consumed process data. Data that is received from the PLC. */
+  uint8_t abSensorData[PNS_PROCESS_DATA_OUTPUT_SIZE];     /** Produced process data. Data that is sent to the PLC.       */
 
 } NETX_PROTOCOL_RSC_T; /* for example profinet data resource */
 
@@ -180,7 +159,7 @@ typedef struct NETX_APP_RSC_Ttag
   const NetxStateDescriptor_t     *previousState;
 
   eLedCommand                     tLedCmd;
-  LCD_COMMAND_T                    tLcdCommand;
+  LCD_COMMAND_T                   tLcdCommand;
 
   TaskHandle_t                    xMailboxTaskHandle;
 } NETX_APP_RSC_T;

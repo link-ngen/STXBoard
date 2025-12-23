@@ -10,8 +10,6 @@
 
 #include "neopixel.h"
 
-#define NEOPXL_QUEUE_LEN 1
-
 typedef enum
 {
   NEOPXL_CONTINUOUS_MODE = 0x00,         /* neopixel stay lighted with given color or default color */
@@ -36,10 +34,10 @@ typedef enum
 typedef struct NEOPXL_DATA_ITEM_Ttag
 {
   NEOPXL_MODE_E eMode;              /* 1 Byte */
-  NEOPXL_BRIGHTNESS_E eBrightness;  /* 1 Byte */
   NEOPXL_RGB_T tColor;              /* 3 Byte */
 } NEOPXL_DATA_ITEM_T;
 
 void Neopxl_Worker(void *pvParameters); /* params queue and command */
+bool Neopxl_UpdateData(const NEOPXL_DATA_ITEM_T *ptNeopxlData);
 
 #endif /* WORKERS_INC_NEOPIXEL_WORKER_H_ */

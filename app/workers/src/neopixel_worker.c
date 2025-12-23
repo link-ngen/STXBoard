@@ -12,22 +12,9 @@
 #include "queue.h"
 
 static NEOPXL_DATA_ITEM_T *s_ptNeopxl;
+static QueueHandle_t s_pxQueue;
 
 typedef void (*NeopxlHandler)(NEOPXL_RESSOURCE_T *ptNpxlRsc);
-
-static bool isValidBrightness(uint8_t brightness)
-{
-  switch (brightness)
-  {
-  case NEOPXL_LOW_BRIGHTNESS:
-  case NEOPXL_MIDDLE_BRIGHTNESS:
-  case NEOPXL_HIGH_BRIGHTNESS:
-  case NEOPXL_MAX_BRIGHTNESS:
-    return true;
-  default:
-    return false;
-  }
-}
 
 /* Neopixel modus */
 static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
@@ -35,26 +22,24 @@ static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
   typedef struct
   {
     NEOPXL_RGB_T tLastColor;
-    NEOPXL_BRIGHTNESS_E eLastBrightness;
-    bool bInitialized;
+    bool fInitialized;
   } NEOPXL_CONT_STATE_T;
 
   static NEOPXL_CONT_STATE_T tPreviousState = { 0 };
   bool fUpdate = false;
 
-  if (!tPreviousState.bInitialized ||
+  if (!tPreviousState.fInitialized ||
     tPreviousState.tLastColor.red != s_ptNeopxl->tColor.red ||
     tPreviousState.tLastColor.green != s_ptNeopxl->tColor.green ||
-    tPreviousState.tLastColor.blue != s_ptNeopxl->tColor.blue ||
-    tPreviousState.eLastBrightness != s_ptNeopxl->eBrightness)
+    tPreviousState.tLastColor.blue != s_ptNeopxl->tColor.blue)
   {
     fUpdate = true;
-    tPreviousState.bInitialized = true;
-    tPreviousState.eLastBrightness = s_ptNeopxl->eBrightness;
+    tPreviousState.fInitialized = true;
     tPreviousState.tLastColor = s_ptNeopxl->tColor;
   }
 
-  if (fUpdate)
+  uint8_t fIsNeopixelOff = Neopxl_Are_Pixel_Off(ptNpxlRsc);
+  if (fUpdate || (fIsNeopixelOff == 1))
   {
     Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
   }
@@ -133,34 +118,33 @@ static void Neopxl_Flashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
   vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
-static NEOPXL_RGB_T Neopxl_Wheel(uint8_t wheel_pos)
+static NEOPXL_RGB_T Neopxl_Wheel(uint8_t bWheelPos)
 {
   static NEOPXL_RGB_T tRetColor = { 0 };
-  if(wheel_pos < 85)
+  if(bWheelPos < 85)
   {
-    tRetColor.red = wheel_pos * 3;
-    tRetColor.green = 255 - wheel_pos * 3;
+    tRetColor.red = bWheelPos * 3;
+    tRetColor.green = 255 - bWheelPos * 3;
     tRetColor.blue = 0;
   }
-  else if(wheel_pos < 170)
+  else if(bWheelPos < 170)
   {
-    wheel_pos -= 85;
-    tRetColor.red = 255 - wheel_pos * 3;
+    bWheelPos -= 85;
+    tRetColor.red = 255 - bWheelPos * 3;
     tRetColor.green = 0;
-    tRetColor.blue = wheel_pos * 3;
+    tRetColor.blue = bWheelPos * 3;
   }
   else
   {
-    wheel_pos -= 170;
+    bWheelPos -= 170;
     tRetColor.red = 0;
-    tRetColor.green = wheel_pos * 3;
-    tRetColor.blue = 255 - wheel_pos * 3;
+    tRetColor.green = bWheelPos * 3;
+    tRetColor.blue = 255 - bWheelPos * 3;
   }
   return tRetColor;
 }
 
-
-void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
   NEOPXL_RGB_T tNeopxl;
   for (uint16_t j = 0; j < 256 * 5; ++j) // 5 cycles of all colors on wheel
@@ -171,24 +155,47 @@ void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
       Neopxl_One_RGB(ptNpxlRsc, i, tNeopxl, 0);
     }
     Neopxl_Refresh(ptNpxlRsc);
-    vTaskDelay(pdMS_TO_TICKS(200));
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
+}
+
+bool Neopxl_UpdateData(const NEOPXL_DATA_ITEM_T *ptNeopxlData)
+{
+  if (ptNeopxlData == NULL)
+  {
+    return false;
+  }
+
+//  if (ptNeopxlData->eMode == s_ptNeopxl->eMode)
+//  {
+//    return true;
+//  }
+
+  NEOPXL_DATA_ITEM_T tTempData = *ptNeopxlData;
+  if(xQueueOverwrite(s_pxQueue, &tTempData) == pdPASS)
+  {
+    return true;
+  }
+
+//  if (xQueueSend(s_pxQueue, (void*)ptNeopxlData, pdMS_TO_TICKS(10)) != pdPASS)
+//  {
+//    NEOPXL_DATA_ITEM_T tTempData;
+//    xQueueReceive(s_pxQueue, (void*)&tTempData, 0);
+//
+//    return (xQueueSend(s_pxQueue, (void*)ptNeopxlData, 0) == pdPASS);
+//  }
+  return true;
 }
 
 void Neopxl_Worker(void *pvParameters)
 {
+  s_pxQueue = (QueueHandle_t)pvParameters;
   NEOPXL_DATA_ITEM_T tDataValue = { 0 };
+
   tDataValue.eMode       = NEOPXL_BLINKING_1_MODE;
-  tDataValue.eBrightness = NEOPXL_LOW_BRIGHTNESS;
-  tDataValue.tColor      = (NEOPXL_RGB_T){ 0, tDataValue.eBrightness, 0 };
+  tDataValue.tColor      = (NEOPXL_RGB_T){ 0, NEOPXL_LOW_BRIGHTNESS, 0 };
 
   s_ptNeopxl = &tDataValue;
-
-  NEOPXL_RESSOURCE_T tNeopxlRsc = { 0 };
-  tNeopxlRsc.ptTim = &htim3;
-  tNeopxlRsc.ulTimChannel = TIM_CHANNEL_2;
-
-  QueueHandle_t pxQueue = (QueueHandle_t)pvParameters;
 
   NeopxlHandler neopxlHandlers[] = {
     [NEOPXL_CONTINUOUS_MODE] = Neopxl_Continuous,
@@ -201,18 +208,21 @@ void Neopxl_Worker(void *pvParameters)
     [NEOPXL_RAINBOW_ROTATING_MODE] = Neopxl_Rainbow_Mode
   };
 
+  NEOPXL_RESSOURCE_T tNeopxlRsc = { 0 };
+  tNeopxlRsc.ptTim = &htim3;
+  tNeopxlRsc.ulTimChannel = TIM_CHANNEL_2;
+
   Neopxl_Init(&tNeopxlRsc);
 
   while (1)
   {
     /* Check if we have new data from the PLC */
-    if (xQueueReceive(pxQueue, &tDataValue, 0) == pdTRUE)
+    if (xQueueReceive(s_pxQueue, &tDataValue, 0) == pdTRUE)
     {
       if (tDataValue.eMode < NEOPXL_UNKNOWN_MODE)
       {
         /* update new data  */
         s_ptNeopxl = &tDataValue;
-        s_ptNeopxl->eBrightness = isValidBrightness(tDataValue.eBrightness) ? tDataValue.eBrightness : NEOPXL_LOW_BRIGHTNESS;
       }
     }
     neopxlHandlers[s_ptNeopxl->eMode](&tNeopxlRsc);

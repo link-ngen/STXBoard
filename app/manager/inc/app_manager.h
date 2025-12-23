@@ -14,7 +14,7 @@
 
 #include "netx_worker.h"
 
-typedef struct AppQueues_tag
+typedef struct APP_QUEUE_Ttag
 {
   QueueHandle_t ledQueue;
   QueueHandle_t neopixelQueue;
@@ -35,7 +35,7 @@ typedef struct AppResources_Ttag
 {
   APP_QUEUE_T     tAppQueues;
   NETX_APP_RSC_T *ptNetxRsc;
-} AppResources_t;
+} APP_MANANGER_RSC_T;
 
 void AppManager_Init();
 void AppManager_Run();

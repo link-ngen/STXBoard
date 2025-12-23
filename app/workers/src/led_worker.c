@@ -10,6 +10,7 @@
 typedef void (*LedCommandHandler_t)(void);
 
 static eLedCommand s_eCmd;
+static QueueHandle_t s_pxQueue;
 
 static void Led_ConfigBlink(void)
 {
@@ -51,10 +52,10 @@ static void Led_ErrorOn(void)
  * @note ERROR_ON command always has priority and overwrites any previous command
  * @note Duplicate commands (except ERROR_ON) are ignored to reduce queue traffic
  */
-bool LED_SendCommand(QueueHandle_t q, const eLedCommand *ptLedCmd)
+bool LED_SendCommand(const eLedCommand *ptLedCmd)
 {
   // Validate input parameters
-  if((q == NULL) || (ptLedCmd == NULL) || (*ptLedCmd >= LED_CMD_COUNT))
+  if((ptLedCmd == NULL) || (*ptLedCmd >= LED_CMD_COUNT))
   {
     return false;
   }
@@ -63,7 +64,7 @@ bool LED_SendCommand(QueueHandle_t q, const eLedCommand *ptLedCmd)
   if(*ptLedCmd == LED_CMD_ERROR_ON)
   {
     eLedCommand tTmp = LED_CMD_ERROR_ON;
-    xQueueOverwrite(q, &tTmp);        // Force overwrite in queue
+    xQueueOverwrite(s_pxQueue, &tTmp);        // Force overwrite in queue
     s_eCmd = LED_CMD_ERROR_ON;       // Update global state
     return true;
   }
@@ -71,12 +72,12 @@ bool LED_SendCommand(QueueHandle_t q, const eLedCommand *ptLedCmd)
   // Avoid sending duplicate commands
   if(s_eCmd == *ptLedCmd)
   {
-    return false;
+    return true;
   }
 
   // Send normal command to queue
   eLedCommand tTmp = *ptLedCmd;
-  if(xQueueOverwrite(q, &tTmp) == pdPASS)
+  if(xQueueOverwrite(s_pxQueue, &tTmp) == pdPASS)
   {
     s_eCmd = *ptLedCmd;  // Update last sent command
     return true;
@@ -95,11 +96,11 @@ void LED_Worker(void* pvParameters)
       [LED_CMD_ERROR_ON]      = Led_ErrorOn
   };
 
-  QueueHandle_t pxQueue = (QueueHandle_t)pvParameters;
+  s_pxQueue = (QueueHandle_t)pvParameters;
 
   while (1)
   {
-    if(xQueueReceive(pxQueue, &s_eCmd, portMAX_DELAY) == pdPASS)
+    if(xQueueReceive(s_pxQueue, &s_eCmd, portMAX_DELAY) == pdPASS)
     {
       if(s_eCmd < LED_CMD_COUNT)
       {

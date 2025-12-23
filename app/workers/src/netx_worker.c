@@ -158,6 +158,11 @@ void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
       break;
 
     case CIFX_DEV_NO_COM_FLAG:
+      NEOPXL_DATA_ITEM_T tNeopxlData;
+      tNeopxlData.eMode = NEOPXL_FLASHING_1_MODE;
+      tNeopxlData.tColor = (NEOPXL_RGB_T){ NEOPXL_LOW_BRIGHTNESS, 0, 0 };
+      Neopxl_UpdateData(&tNeopxlData);
+
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
       break;
 

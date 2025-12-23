@@ -10,12 +10,15 @@
 #include "lcd_worker.h"
 #include "neopixel_worker.h"
 
-static AppResources_t *s_ptAppRsc;
+static APP_MANANGER_RSC_T *s_ptAppRsc;
+
+#define LED_QUEUE_LEN     1
+#define NEOPXL_QUEUE_LEN  1
 
 void AppManager_Init()
 {
-  s_ptAppRsc = OS_Memalloc(sizeof(AppResources_t));
-  OS_Memset(s_ptAppRsc, 0, sizeof(AppResources_t));
+  s_ptAppRsc = OS_Memalloc(sizeof(APP_MANANGER_RSC_T));
+  OS_Memset(s_ptAppRsc, 0, sizeof(APP_MANANGER_RSC_T));
 
   s_ptAppRsc->tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
   s_ptAppRsc->tAppQueues.neopixelQueue = xQueueCreate(NEOPXL_QUEUE_LEN, sizeof(NEOPXL_DATA_ITEM_T));
@@ -49,6 +52,6 @@ void AppManager_Run()
 
 void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc)
 {
-  (void)LED_SendCommand(s_ptAppRsc->tAppQueues.ledQueue, &ptNetxRsc->tLedCmd);
+  (void)LED_SendCommand(&ptNetxRsc->tLedCmd);
   (void)LCD_SendCommand(&ptNetxRsc->tLcdCommand);
 }

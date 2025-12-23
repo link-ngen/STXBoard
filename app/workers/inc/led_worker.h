@@ -22,9 +22,7 @@ typedef enum {
   LED_CMD_COUNT
 } eLedCommand;
 
-#define LED_QUEUE_LEN 1
-
 void LED_Worker(void* pvParameters);
-bool LED_SendCommand(QueueHandle_t q, const eLedCommand *ptLedCmd);
+bool LED_SendCommand(const eLedCommand *ptLedCmd);
 
 #endif /* WORKERS_INC_LED_WORKER_H_ */

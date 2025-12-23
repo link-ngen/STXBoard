@@ -83,41 +83,41 @@ static int PNS_Setup(NETX_PROTOCOL_RSC_T *ptProtocolRsc )
 * \param ptAppData  [in]  Pointer to application data
 */
 /**************************************************************************************/
-static void IO_UpdateCycleCounter( NETX_PROTOCOL_RSC_T* ptProtocolRsc )
-{
-  static uint32_t s_ulCycle = 0;
-
-  s_ulCycle++;
-
-  if (ptProtocolRsc->tInputData.bCyclicCounter_Speed > 0)
-  {
-    if (s_ulCycle >= ptProtocolRsc->tInputData.bCyclicCounter_Speed)
-    {
-      if (APP_CYCLE_COUNTER_COUNT_UP == ptProtocolRsc->tInputData.bCyclicCounter_Direction)
-      {
-        ptProtocolRsc->tOutputData.usCyclicCounter++;
-      }
-      else
-      {
-        ptProtocolRsc->tOutputData.usCyclicCounter--;
-      }
-
-      s_ulCycle = 0;
-    }
-  }
-  else
-  {
-    ptProtocolRsc->tOutputData.usCyclicCounter = 0xFFFF;
-  }
-}
+//static void IO_UpdateCycleCounter( NETX_PROTOCOL_RSC_T* ptProtocolRsc )
+//{
+//  static uint32_t s_ulCycle = 0;
+//
+//  s_ulCycle++;
+//
+//  if (ptProtocolRsc->tInputData.bCyclicCounter_Speed > 0)
+//  {
+//    if (s_ulCycle >= ptProtocolRsc->tInputData.bCyclicCounter_Speed)
+//    {
+//      if (APP_CYCLE_COUNTER_COUNT_UP == ptProtocolRsc->tInputData.bCyclicCounter_Direction)
+//      {
+//        ptProtocolRsc->tOutputData.usCyclicCounter++;
+//      }
+//      else
+//      {
+//        ptProtocolRsc->tOutputData.usCyclicCounter--;
+//      }
+//
+//      s_ulCycle = 0;
+//    }
+//  }
+//  else
+//  {
+//    ptProtocolRsc->tOutputData.usCyclicCounter = 0xFFFF;
+//  }
+//}
 
 static int PNS_IOTask(NETX_PROTOCOL_RSC_T *ptProtocolRsc)
 {
   long lRet = CIFX_NO_ERROR; /** Return value for common error codes  */
-  IO_UpdateCycleCounter(ptProtocolRsc);
+  //IO_UpdateCycleCounter(ptProtocolRsc);
 
   /** INPUT DATA *********************************************************************/
-  lRet = xChannelIORead(ptProtocolRsc->hCifXChannel, 0, 0, sizeof(ptProtocolRsc->tInputData), &ptProtocolRsc->tInputData, 0);
+  lRet = xChannelIORead(ptProtocolRsc->hCifXChannel, 0, 0, sizeof(ptProtocolRsc->abActorData), ptProtocolRsc->abActorData, 0);
   if(CIFX_NO_ERROR != lRet)
   {
     /** Something failed?
@@ -129,9 +129,10 @@ static int PNS_IOTask(NETX_PROTOCOL_RSC_T *ptProtocolRsc)
   }
 
   /* Process data... */
+  // TODO: process data in the same cycle?
 
   /** OUTPUT DATA ***************************************/
-  lRet = xChannelIOWrite(ptProtocolRsc->hCifXChannel, 0, 0, sizeof(ptProtocolRsc->tOutputData), &ptProtocolRsc->tOutputData, 0);
+  lRet = xChannelIOWrite(ptProtocolRsc->hCifXChannel, 0, 0, sizeof(ptProtocolRsc->abSensorData), ptProtocolRsc->abSensorData, 0);
   return lRet;
 }
 
