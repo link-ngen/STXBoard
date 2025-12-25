@@ -21,11 +21,6 @@
 
 typedef void (*LCD_ScreenFunction_t)(LCD_COMMAND_T*);
 
-static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
-    { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
-
-static uint16_t wireoctahedron[6][2];
-
 static const uint8_t originx = 64;
 static const uint8_t originy = 32;
 
@@ -38,6 +33,12 @@ uint8_t u8x = 10, u8y = 10;
 int8_t s8speedx = 2, s8speedy = 2;
 
 static LCD_COMMAND_T tLcdCommand = { 0 };
+
+#if 0
+static const int8_t octahedron_vertex[6][3] = { { 0, 30, 0 }, { -20, 0, 0 },
+    { 0, 0, 20 }, { 20, 0, 0 }, { 0, 0, -20 }, { 0, -30, 0 } };
+
+static uint16_t wireoctahedron[6][2];
 
 static void drawOctahedron(void)
 {
@@ -91,6 +92,34 @@ static void rotateOctahedron(int16_t pitch, int16_t roll, int16_t yaw)
     wireoctahedron[i][1] = rotyyy;
   }
 }
+
+static void ShowVertexScreen(LCD_COMMAND_T* ptLcdPaket)
+{
+  ssd1306_Fill(Black);
+
+  if(angle > FULL_CIRCLE)
+  {
+    angle = 0;
+  }
+
+  rotateOctahedron(angle, 0, 0);
+  drawOctahedron();
+
+  angle += 4;
+  fps += 1000 / (OS_GetMilliSecCounter() - stime);
+  stime = OS_GetMilliSecCounter();
+  frames++;
+
+  ssd1306_SetCursor(1, 55);
+  sprintf(string_fps, "%d", (int)(fps / frames));
+  ssd1306_WriteString(string_fps, Font_6x8, White);
+  ssd1306_WriteString(" fps", Font_6x8, White);
+
+
+  ssd1306_UpdateScreen();
+  vTaskDelay(pdMS_TO_TICKS(10));
+}
+#endif
 
 static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
 {
@@ -152,33 +181,6 @@ static void ShowBootScreen(LCD_COMMAND_T* ptLcdPaket)
   ssd1306_WriteString("Boot screen\n", Font_6x8, White);
   ssd1306_SetCursor(0, 10);
   ssd1306_WriteString(ptLcdPaket->pcMessage, Font_6x8, White);
-
-  ssd1306_UpdateScreen();
-  vTaskDelay(pdMS_TO_TICKS(10));
-}
-
-static void ShowVertexScreen(LCD_COMMAND_T* ptLcdPaket)
-{
-  ssd1306_Fill(Black);
-
-  if(angle > FULL_CIRCLE)
-  {
-    angle = 0;
-  }
-
-  rotateOctahedron(angle, 0, 0);
-  drawOctahedron();
-
-  angle += 4;
-  fps += 1000 / (OS_GetMilliSecCounter() - stime);
-  stime = OS_GetMilliSecCounter();
-  frames++;
-
-  ssd1306_SetCursor(1, 55);
-  sprintf(string_fps, "%d", (int)(fps / frames));
-  ssd1306_WriteString(string_fps, Font_6x8, White);
-  ssd1306_WriteString(" fps", Font_6x8, White);
-
 
   ssd1306_UpdateScreen();
   vTaskDelay(pdMS_TO_TICKS(10));

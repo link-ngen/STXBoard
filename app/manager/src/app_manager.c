@@ -65,6 +65,6 @@ void AppManager_Call_Flashing_Mode(NETX_APP_RSC_T* ptNetxRsc)
 {
   NEOPXL_DATA_ITEM_T tNeopxlData;
   tNeopxlData.eMode = NEOPXL_FLASHING_2_MODE;
-  tNeopxlData.tColor = (NEOPXL_RGB_T){ NEOPXL_LOW_BRIGHTNESS, 0, 0 };
+  tNeopxlData.tColor = (NEOPXL_RGB_T){ 0x40, 0, 0 };
   Neopxl_UpdateData(&tNeopxlData);
 }
