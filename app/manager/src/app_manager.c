@@ -55,13 +55,13 @@ void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc)
   (void)LCD_SendCommand(&ptNetxRsc->tLcdCommand);
 }
 
-void AppManager_UpdateNeopixel(NETX_APP_RSC_T* ptNetxRsc)
+void AppManager_UpdateNeopixelDataFromPLC(NETX_APP_RSC_T* ptNetxRsc)
 {
   NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->abActorData;
   (void)Neopxl_UpdateData(ptNeopxlData);
 }
 
-void AppManager_Call_Flashing_Mode(NETX_APP_RSC_T* ptNetxRsc)
+void AppManager_CallRedFlashingMode(NETX_APP_RSC_T* ptNetxRsc)
 {
   NEOPXL_DATA_ITEM_T tNeopxlData;
   tNeopxlData.eMode = NEOPXL_FLASHING_2_MODE;

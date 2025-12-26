@@ -90,7 +90,7 @@ void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
     else /* CifXToolkit driver open succeed */
     {
       snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "DrvOpen ok\n");
-      (void) vTaskResume(ptNetxRsc->xMailboxTaskHandle);
+      AppManager_CallRedFlashingMode(ptNetxRsc);
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
     }
   }
@@ -120,9 +120,12 @@ void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
   }
 
   static const NetxStateDescriptor_t *ptNetxStateDesc;
+  /* Start mailbox communication */
+  (void) vTaskResume(ptNetxRsc->xMailboxTaskHandle);
 
   /* config done */
   uint32_t commState = Netx_ReadNetworkState(ptNetxRsc);
+  /*XXX: To access the operating mode, some hilscher firmware requires the xChannelIORead or Write function.  */
   if(commState & HIL_COMM_STATE_OPERATE)
   {
     ptNetxStateDesc = &NETX_STATE_OP_DESC;
@@ -154,12 +157,12 @@ void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
     case CIFX_NO_ERROR:
       /* Process input data and prepare for the next write to the field bus */
       // TODO: process io data. Send input data to other task and get the output data from other task
-      AppManager_UpdateNeopixel(ptNetxRsc);
+      AppManager_UpdateNeopixelDataFromPLC(ptNetxRsc);
       ptNetxStateDesc = &NETX_STATE_OP_DESC;
       break;
 
     case CIFX_DEV_NO_COM_FLAG:
-      AppManager_Call_Flashing_Mode(ptNetxRsc);
+      AppManager_CallRedFlashingMode(ptNetxRsc);
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
       break;
 
@@ -180,7 +183,7 @@ void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
 void State_NetxError(NETX_APP_RSC_T *ptNetxRsc)
 {
   PRINTF("---------- NetX Error ----------" NEWLINE);
-
+  /* XXX: This is a quick solution. Think about reinitialize cifxtoolkit, if netx handshake freeze. */
   if(ptNetxRsc->previousState->id == NETX_STATE_PREOP &&
     ptNetxRsc->bInitErrCounter < 64)
   {
@@ -216,7 +219,7 @@ void NetxWorker(void *pvParameters)
 {
   tNetxFSM.currentState   = &NETX_STATE_INIT_DESC;
   tNetxFSM.previousState  = &NETX_STATE_INIT_DESC;
-  pvParameters                = (void*)&tNetxFSM;
+  pvParameters            = (void*)&tNetxFSM;
 
   BaseType_t xReturned = pdPASS;
 

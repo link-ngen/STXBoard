@@ -161,7 +161,7 @@ static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
     s_tModeState.modus.tContinuous.lastColor = s_ptNeopxl->tColor;
   }
 
-  s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000); // 1s Polling
+  s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000);
   s_tModeState.ulLastUpdate = xTaskGetTickCount();
 }
 
@@ -308,7 +308,7 @@ void Neopxl_Worker(void *pvParameters)
   };
 
   NEOPXL_RESSOURCE_T tNeopxlRsc = { 0 };
-  tNeopxlRsc.ptTim = &htim3;
+  tNeopxlRsc.ptTim        = &htim3;
   tNeopxlRsc.ulTimChannel = TIM_CHANNEL_2;
 
   Neopxl_Init(&tNeopxlRsc);

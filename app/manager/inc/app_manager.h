@@ -40,6 +40,6 @@ typedef struct APP_MANANGER_RSC_Ttag
 void AppManager_Init();
 void AppManager_Run();
 void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc);
-void AppManager_UpdateNeopixel(NETX_APP_RSC_T* ptNetxRsc);
-void AppManager_Call_Flashing_Mode(NETX_APP_RSC_T* ptNetxRsc);
+void AppManager_UpdateNeopixelDataFromPLC(NETX_APP_RSC_T* ptNetxRsc);
+void AppManager_CallRedFlashingMode(NETX_APP_RSC_T* ptNetxRsc);
 #endif /* MANAGER_INC_APP_MANAGER_H_ */
