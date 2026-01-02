@@ -248,13 +248,3 @@ uint32_t Netx_ReadNetworkState(NETX_APP_RSC_T *ptNetxRsc)
 {
   return ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc.pfnReadNetworkState(ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]);
 }
-
-//int32_t NetX_ProcessIOData(NETX_APP_RSC_T *ptNetxRsc)
-//{
-//  int32_t lRet = CIFX_NO_ERROR;
-//  NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->abActorData;
-//
-//  Neopxl_UpdateData(ptNeopxlData);
-//
-//  return lRet;
-//}

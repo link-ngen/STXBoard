@@ -43,6 +43,7 @@
 
 static int s_fOSInitDone = 0;
 
+#ifdef USE_BUS_SYNC
 /* Interrupt members (static variables sufficient as only one DPM is handled) */
 static DEVICEINSTANCE *s_ptIrqDevInst = NULL; /*<! Interrupt context */
 static TaskHandle_t s_xDsrTask = NULL; /*<! DSR task handle, notified by DPM IRQ */
@@ -52,6 +53,7 @@ static bool s_fDSRActive = false;
 
 /* idle time processing, provided in the application */
 void (*g_pfnOSAL_Idle)(void);
+#endif
 
 //#error "Implement target system abstraction in this file"
 
@@ -533,7 +535,7 @@ void OS_InvalidateCacheMemory_FromDevice(void *pvMem, unsigned long ulMemSize)
 /*!<                         Interrupt handling                              */
 /*****************************************************************************/
 /*****************************************************************************/
-
+#ifdef USE_BUS_SYNC
 /*****************************************************************************/
 /*! DSR task evaluating DPM changes.
  *   Function should be instantiated as a high priority task
@@ -590,6 +592,7 @@ void DIRQ_Handler(uint16_t GPIO_Pin)
     }
   }
 }
+#endif
 
 /*****************************************************************************/
 /*! This function enables the interrupts for the device physically
@@ -598,6 +601,7 @@ void DIRQ_Handler(uint16_t GPIO_Pin)
 /*****************************************************************************/
 void OS_EnableInterrupts(void *pvOSDependent)
 {
+#ifdef USE_BUS_SYNC
   s_fDSRActive = true;
 
   (void) xTaskCreate(CIFX_DSRHandler, "DSR_Task",
@@ -609,6 +613,9 @@ void OS_EnableInterrupts(void *pvOSDependent)
   /* Store context locally of ISR/DSR */
   s_ptIrqDevInst = (DEVICEINSTANCE*) pvOSDependent;
   HAL_NVIC_EnableIRQ(NETX_DIRQ_EXTI_IRQn);
+#else
+  __enable_irq();
+#endif
 }
 
 /*****************************************************************************/
@@ -618,6 +625,7 @@ void OS_EnableInterrupts(void *pvOSDependent)
 /*****************************************************************************/
 void OS_DisableInterrupts(void *pvOSDependent)
 {
+#ifdef USE_BUS_SYNC
   UNREFERENCED_PARAMETER(pvOSDependent);
 
   /* Disable DIRQ Pin */
@@ -631,7 +639,9 @@ void OS_DisableInterrupts(void *pvOSDependent)
   taskYIELD();
 
   /* Task handle is deleted in DSR epilogue */
-  s_ptIrqDevInst = NULL;
+#else
+  __disable_irq();
+#endif
 }
 
 #ifdef CIFX_TOOLKIT_ENABLE_DSR_LOCK

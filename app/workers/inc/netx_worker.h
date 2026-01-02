@@ -12,6 +12,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 
 #include "cifXErrors.h"
 #include "cifXToolkit.h"
@@ -159,6 +160,8 @@ typedef struct NETX_APP_RSC_Ttag
   LCD_COMMAND_T                   tLcdCommand;
 
   TaskHandle_t                    xMailboxTaskHandle;
+  TaskHandle_t                    xNetxWorkerTaskHandle;
+  TimerHandle_t                   hCyclicTimer;
 } NETX_APP_RSC_T;
 
 /* netx helper functions */

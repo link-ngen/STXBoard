@@ -100,7 +100,6 @@ void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
   }
   NetX_FSMTransition(ptNetxRsc, ptNetxStateDesc);
   ptNetxRsc->previousState = &NETX_STATE_INIT_DESC;
-  vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
@@ -129,6 +128,7 @@ void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
   if(commState & HIL_COMM_STATE_OPERATE)
   {
     ptNetxStateDesc = &NETX_STATE_OP_DESC;
+    xTimerChangePeriod(ptNetxRsc->hCyclicTimer, pdMS_TO_TICKS(IO_CYCLE_TIME), 1);
   }
   else /* if stack is not in OP -> no communication with a PLC or controller */
   {
@@ -137,7 +137,6 @@ void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
 
   NetX_FSMTransition(ptNetxRsc, ptNetxStateDesc);
   ptNetxRsc->previousState = &NETX_STATE_PREOP_DESC;
-  vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
@@ -164,20 +163,20 @@ void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
     case CIFX_DEV_NO_COM_FLAG:
       AppManager_CallRedFlashingMode(ptNetxRsc);
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
+      xTimerChangePeriod(ptNetxRsc->hCyclicTimer, pdMS_TO_TICKS(1), 1);
       break;
 
     case CIFX_DEV_EXCHANGE_FAILED:
     default:
       snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "ChnCom failed \n");
       ptNetxStateDesc = &NETX_STATE_ERROR_DESC;
+      xTimerChangePeriod(ptNetxRsc->hCyclicTimer, pdMS_TO_TICKS(1), 1);
       break;
     }
   }
 
   NetX_FSMTransition(ptNetxRsc, ptNetxStateDesc);
   ptNetxRsc->previousState = &NETX_STATE_OP_DESC;
-
-  vTaskDelay(pdMS_TO_TICKS(IO_CYCLE_TIME)); /* 4ms io cyclic task */
 }
 
 void State_NetxError(NETX_APP_RSC_T *ptNetxRsc)
@@ -194,13 +193,12 @@ void State_NetxError(NETX_APP_RSC_T *ptNetxRsc)
   else
   {
     NetX_FSMTransition(ptNetxRsc, &NETX_STATE_ERROR_DESC);
-
     /* Manually update peripherals */
     AppManager_UpdatePeripherals(ptNetxRsc);
     vTaskSuspend(ptNetxRsc->xMailboxTaskHandle);
   }
   ptNetxRsc->previousState = &NETX_STATE_ERROR_DESC;
-  vTaskDelay(pdMS_TO_TICKS(1));
+  // vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 static void NetX_MailboxTask(void* pvParameters)
@@ -215,6 +213,11 @@ static void NetX_MailboxTask(void* pvParameters)
 
 static NETX_APP_RSC_T tNetxFSM;
 
+static void CyclicTimerCallback(TimerHandle_t xTimer)
+{
+  (void) xTaskNotifyGive(tNetxFSM.xNetxWorkerTaskHandle);
+}
+
 void NetxWorker(void *pvParameters)
 {
   tNetxFSM.currentState   = &NETX_STATE_INIT_DESC;
@@ -222,6 +225,13 @@ void NetxWorker(void *pvParameters)
   pvParameters            = (void*)&tNetxFSM;
 
   BaseType_t xReturned = pdPASS;
+
+  tNetxFSM.xNetxWorkerTaskHandle = xTaskGetCurrentTaskHandle();
+  tNetxFSM.hCyclicTimer = xTimerCreate("CyclicTimer",
+                          pdMS_TO_TICKS(1),
+                          pdTRUE,
+                          NULL,
+                          CyclicTimerCallback);
 
   /* Create mailbox task */
   xReturned = xTaskCreate((pdTASK_CODE)NetX_MailboxTask,
@@ -235,9 +245,12 @@ void NetxWorker(void *pvParameters)
   vTaskSuspend(tNetxFSM.xMailboxTaskHandle);
 
   NetX_OnEnterState(&tNetxFSM, NETX_STATE_INIT);
+  xTimerStart(tNetxFSM.hCyclicTimer, 0);
 
   while (1)
   {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
     /* Main state machine logic, runs the current state function */
     tNetxFSM.currentState->pfnc(&tNetxFSM);
   }

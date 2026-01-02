@@ -157,7 +157,11 @@ void USER_GetAliasName(PCIFX_DEVICE_INFORMATION ptDevInfo, uint32_t ulMaxLen,
 /*****************************************************************************/
 int USER_GetInterruptEnable(PCIFX_DEVICE_INFORMATION ptDevInfo)
 {
+#ifdef USE_BUS_SYNC
 	return 1;
+#else
+	return 0;
+#endif
 }
 
 /*****************************************************************************/

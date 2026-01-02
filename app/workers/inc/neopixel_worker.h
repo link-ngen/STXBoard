@@ -20,7 +20,7 @@ typedef enum
   NEOPXL_FLASHING_1_MODE = 0x04,         /* Flashing with given color (100 ms on → 2s off)*/
   NEOPXL_FLASHING_2_MODE = 0x05,         /* Flashing with given color (100 ms on → 200ms off → 100ms on → 1s off) */
   NEOPXL_FLASHING_3_MODE = 0x06,         /* Flashing with given color (100 ms on → 200ms off → 100ms on → 200ms off → 100ms on → 1s off) */
-  NEOPXL_RAINBOW_MODE = 0x07,   /* Rainbow rotating */
+  NEOPXL_RAINBOW_MODE = 0x07,            /* Rainbow rotating */
   NEOPXL_UNKNOWN_MODE
 } NEOPXL_MODE_E;
 

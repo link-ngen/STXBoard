@@ -17,6 +17,7 @@
 typedef struct APP_QUEUE_Ttag
 {
   QueueHandle_t ledQueue;
+  QueueHandle_t lcdQueue;
   QueueHandle_t neopixelQueue;
 } APP_QUEUE_T;
 

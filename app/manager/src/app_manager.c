@@ -13,6 +13,7 @@
 static APP_MANANGER_RSC_T s_tAppRsc;
 
 #define LED_QUEUE_LEN     1
+#define LCD_QUEUE_LEN     1
 #define NEOPXL_QUEUE_LEN  1
 
 void AppManager_Init()
@@ -20,11 +21,12 @@ void AppManager_Init()
   OS_Memset(&s_tAppRsc, 0, sizeof(APP_MANANGER_RSC_T));
 
   s_tAppRsc.tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
+  s_tAppRsc.tAppQueues.lcdQueue = xQueueCreate(LCD_QUEUE_LEN, sizeof(LCD_COMMAND_T));
   s_tAppRsc.tAppQueues.neopixelQueue = xQueueCreate(NEOPXL_QUEUE_LEN, sizeof(NEOPXL_DATA_ITEM_T));
 
   FreeRTOS_THREAD_T taskConfigs[] = {
     { (pdTASK_CODE)NetxWorker, "netx90 Task", configMINIMAL_STACK_SIZE * 24, (void*)s_tAppRsc.ptNetxRsc, (tskIDLE_PRIORITY) + 2, NULL },
-    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 3, NULL, (tskIDLE_PRIORITY) + 0, NULL },
+    { (pdTASK_CODE)LCD_Worker, "LCD Task", configMINIMAL_STACK_SIZE * 3, (void*)s_tAppRsc.tAppQueues.lcdQueue, (tskIDLE_PRIORITY) + 0, NULL },
     { (pdTASK_CODE)LED_Worker, "Conf Led Task", configMINIMAL_STACK_SIZE, (void*)s_tAppRsc.tAppQueues.ledQueue, (tskIDLE_PRIORITY) + 3, NULL },
     { (pdTASK_CODE)Neopxl_Worker, "Neopixel Task", configMINIMAL_STACK_SIZE * 2, (void*)s_tAppRsc.tAppQueues.neopixelQueue, (tskIDLE_PRIORITY) + 1, NULL },
   };

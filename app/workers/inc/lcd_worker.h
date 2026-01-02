@@ -11,7 +11,7 @@
 #include <stdbool.h>
 
 typedef enum {
-  LCD_IDLE_SCREEN,      /* screen if no activities        */
+  LCD_IDLE_SCREEN=0,      /* screen if no activities        */
   LCD_BOOT_SCREEN,      /* screen after reset             */
   LCD_CONFIG_SCREEN,    /* screen during config           */
   LCD_IOXCHANGE_SCREEN, /* screen during IO data exchange */
