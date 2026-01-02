@@ -11,7 +11,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-typedef struct
+typedef struct NEOPXL_MODE_STATE_Ttag
 {
   union
   {
@@ -162,7 +162,6 @@ static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
   }
 
   s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000);
-  s_tModeState.ulLastUpdate = xTaskGetTickCount();
 }
 
 /* Generic Blinking Handler */
@@ -180,7 +179,6 @@ static void Neopxl_Generic_Blink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTim
   }
 
   s_tModeState.modus.tBlink.bOn = !s_tModeState.modus.tBlink.bOn;
-  s_tModeState.ulLastUpdate = xTaskGetTickCount();
 }
 
 static void Neopxl_Blinking_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
@@ -233,7 +231,6 @@ static void Neopxl_Generic_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t bFlashPa
 
   s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(pusPattern[currentPhase]);
   ++s_tModeState.modus.tBlink.flashCount;
-  s_tModeState.ulLastUpdate = xTaskGetTickCount();
 }
 
 static void Neopxl_Flashing_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
@@ -253,8 +250,6 @@ static void Neopxl_Flashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 
 static void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  s_tModeState.ulLastUpdate = xTaskGetTickCount();
-
   NEOPXL_RGB_T tNeopxl = Neopxl_Wheel(((s_tModeState.modus.tRainbow.ledIndex * 256 / NEOPXL_NUM_LEDS) + s_tModeState.modus.tRainbow.colorIndex) & 255);
 
   Neopxl_One_RGB(ptNpxlRsc, s_tModeState.modus.tRainbow.ledIndex, tNeopxl, 0);
@@ -333,10 +328,11 @@ void Neopxl_Worker(void *pvParameters)
       }
     }
 
-    // check if it's time for update
+    /* check if it's time for update */
     if(Neopxl_IsTimeForUpdate())
     {
       neopxlHandlers[s_ptNeopxl->eMode](&tNeopxlRsc);
+      s_tModeState.ulLastUpdate = xTaskGetTickCount();
     }
 
     // delay for cpu schedule

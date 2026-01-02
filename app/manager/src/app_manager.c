@@ -18,7 +18,7 @@ static APP_MANANGER_RSC_T s_tAppRsc;
 
 void AppManager_Init()
 {
-  OS_Memset(&s_tAppRsc, 0, sizeof(APP_MANANGER_RSC_T));
+  memset(&s_tAppRsc, 0, sizeof(APP_MANANGER_RSC_T));
 
   s_tAppRsc.tAppQueues.ledQueue = xQueueCreate(LED_QUEUE_LEN, sizeof(eLedCommand));
   s_tAppRsc.tAppQueues.lcdQueue = xQueueCreate(LCD_QUEUE_LEN, sizeof(LCD_COMMAND_T));
@@ -35,13 +35,13 @@ void AppManager_Init()
 
   for (uint32_t i = 0; i < sizeof(taskConfigs) / sizeof(taskConfigs[0]); ++i)
   {
-      xReturned = xTaskCreate( taskConfigs[i].pfnThread,
-                               taskConfigs[i].pcName,
-                               taskConfigs[i].usStackDepth,
-                               taskConfigs[i].pvArg,
-                               taskConfigs[i].uxPriority,
-                               &taskConfigs[i].hThread);
-      configASSERT(pdPASS == xReturned);
+    xReturned = xTaskCreate( taskConfigs[i].pfnThread,
+                             taskConfigs[i].pcName,
+                             taskConfigs[i].usStackDepth,
+                             taskConfigs[i].pvArg,
+                             taskConfigs[i].uxPriority,
+                             &taskConfigs[i].hThread);
+    configASSERT(pdPASS == xReturned);
   }
 }
 

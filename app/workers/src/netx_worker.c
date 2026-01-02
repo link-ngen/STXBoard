@@ -198,7 +198,6 @@ void State_NetxError(NETX_APP_RSC_T *ptNetxRsc)
     vTaskSuspend(ptNetxRsc->xMailboxTaskHandle);
   }
   ptNetxRsc->previousState = &NETX_STATE_ERROR_DESC;
-  // vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 static void NetX_MailboxTask(void* pvParameters)
@@ -212,7 +211,6 @@ static void NetX_MailboxTask(void* pvParameters)
 }
 
 static NETX_APP_RSC_T tNetxFSM;
-
 static void CyclicTimerCallback(TimerHandle_t xTimer)
 {
   (void) xTaskNotifyGive(tNetxFSM.xNetxWorkerTaskHandle);

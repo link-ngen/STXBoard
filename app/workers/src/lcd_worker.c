@@ -21,27 +21,27 @@
 
 typedef void (*LCD_ScreenFunction_t)(LCD_COMMAND_T*);
 
-//static const uint8_t originx = 64;
-//static const uint8_t originy = 32;
-
-typedef struct {
-  LCD_SCREEN_E eCurrentScreen;
-  LCD_SCREEN_E eRequestedScreen;
-  union {
-    /* Boucing ball */
-    struct {
+typedef struct LCD_STATE_Ttag
+{
+  union
+  {
+    /* Boucing ball data*/
+    struct
+    {
       uint8_t u8x, u8y;
       int8_t s8speedx, s8speedy;
     } tBouncingBall;
 
     /* Loading Animation */
-    struct {
+    struct
+    {
       uint16_t uProgressAngle;
       bool bActive;
     } tLoadingAnimation;
 
     /* IO Exchange (cat animation) */
-    struct {
+    struct
+    {
       uint8_t uFrameIndex;
       uint32_t uLastFrameTime;
     } tAnimation;
@@ -49,19 +49,12 @@ typedef struct {
 
   uint32_t ulLastUpdate;
   uint32_t ulUpdateInterval;
-
-  LCD_COMMAND_T tCurrentCommand;
-  bool bInitialized;
+  LCD_SCREEN_E eCurrentScreen;
+  LCD_COMMAND_T *tCurrentCommand;
 } LCD_STATE_T;
 
-static LCD_STATE_T s_tLcdState = {0};
+static LCD_STATE_T *s_ptLcdState;
 static QueueHandle_t s_pxLcdQueue = NULL;
-
-/* Bouncing ball data */
-//uint8_t u8x = 10, u8y = 10;
-//int8_t s8speedx = 2, s8speedy = 2;
-
-//static LCD_COMMAND_T tLcdCommand = { 0 };
 
 #if 0
 uint32_t stime, fps, frames;
@@ -155,50 +148,48 @@ static void ShowVertexScreen(LCD_COMMAND_T* ptLcdPaket)
 #endif
 
 
-static void LCD_Initialize(LCD_SCREEN_E eScreen)
+static void LCD_InitializeScreen(LCD_SCREEN_E eScreen)
 {
-  memset(&s_tLcdState.uScreenData, 0, sizeof(s_tLcdState.uScreenData));
+  memset(&s_ptLcdState->uScreenData, 0, sizeof(s_ptLcdState->uScreenData));
+  s_ptLcdState->eCurrentScreen = eScreen;
 
   switch (eScreen)
   {
   case LCD_VERTEX_SCREEN:
-    s_tLcdState.uScreenData.tBouncingBall.u8x = 10;
-    s_tLcdState.uScreenData.tBouncingBall.u8y = 10;
-    s_tLcdState.uScreenData.tBouncingBall.s8speedx = 2;
-    s_tLcdState.uScreenData.tBouncingBall.s8speedy = 2;
-    s_tLcdState.ulUpdateInterval = pdMS_TO_TICKS(8);
+    s_ptLcdState->uScreenData.tBouncingBall.u8x = 10;
+    s_ptLcdState->uScreenData.tBouncingBall.u8y = 10;
+    s_ptLcdState->uScreenData.tBouncingBall.s8speedx = 2;
+    s_ptLcdState->uScreenData.tBouncingBall.s8speedy = 2;
+    s_ptLcdState->ulUpdateInterval = pdMS_TO_TICKS(8);
     break;
 
   case LCD_IOXCHANGE_SCREEN:
-    s_tLcdState.uScreenData.tAnimation.uFrameIndex = 0;
-    s_tLcdState.uScreenData.tAnimation.uLastFrameTime = 0;
-    s_tLcdState.ulUpdateInterval = pdMS_TO_TICKS(50);
+    s_ptLcdState->uScreenData.tAnimation.uFrameIndex = 0;
+    s_ptLcdState->uScreenData.tAnimation.uLastFrameTime = 0;
+    s_ptLcdState->ulUpdateInterval = pdMS_TO_TICKS(50);
     break;
 
   case LCD_CONFIG_SCREEN:
     /* Loading Animation */
-    s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle = 0;
-    s_tLcdState.uScreenData.tLoadingAnimation.bActive = true;
-    s_tLcdState.ulUpdateInterval = pdMS_TO_TICKS(10); /* Loading */
+    s_ptLcdState->uScreenData.tLoadingAnimation.uProgressAngle = 0;
+    s_ptLcdState->uScreenData.tLoadingAnimation.bActive = true;
+    s_ptLcdState->ulUpdateInterval = pdMS_TO_TICKS(10); /* Loading */
     break;
 
   case LCD_IDLE_SCREEN:
   case LCD_BOOT_SCREEN:
   case LCD_ERROR_SCREEN:
   default:
-    s_tLcdState.ulUpdateInterval = pdMS_TO_TICKS(1000); /* slow Update */
+    s_ptLcdState->ulUpdateInterval = pdMS_TO_TICKS(1000); /* slow Update */
     break;
   }
-
-  s_tLcdState.eCurrentScreen = eScreen;
-  s_tLcdState.ulLastUpdate = xTaskGetTickCount();
-  s_tLcdState.bInitialized = true;
+  s_ptLcdState->ulLastUpdate = xTaskGetTickCount();
 }
 
 static bool LCD_IsTimeForUpdate(void)
 {
   uint32_t ulCurrentTime = xTaskGetTickCount();
-  return ((ulCurrentTime - s_tLcdState.ulLastUpdate) >= s_tLcdState.ulUpdateInterval);
+  return ((ulCurrentTime - s_ptLcdState->ulLastUpdate) >= s_ptLcdState->ulUpdateInterval);
 }
 
 static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
@@ -236,69 +227,66 @@ static void ShowBouncingBallScreen(LCD_COMMAND_T *ptLcdPaket)
 {
   /* Bouncing Ball */
   ssd1306_Fill(Black);
-  ssd1306_GFX_FillCircle(s_tLcdState.uScreenData.tBouncingBall.u8x, s_tLcdState.uScreenData.tBouncingBall.u8y, 3, White);
+  ssd1306_GFX_FillCircle(s_ptLcdState->uScreenData.tBouncingBall.u8x, s_ptLcdState->uScreenData.tBouncingBall.u8y, 3, White);
 
   /* movement */
-  s_tLcdState.uScreenData.tBouncingBall.u8x += s_tLcdState.uScreenData.tBouncingBall.s8speedx;
-  s_tLcdState.uScreenData.tBouncingBall.u8y += s_tLcdState.uScreenData.tBouncingBall.s8speedy;
+  s_ptLcdState->uScreenData.tBouncingBall.u8x += s_ptLcdState->uScreenData.tBouncingBall.s8speedx;
+  s_ptLcdState->uScreenData.tBouncingBall.u8y += s_ptLcdState->uScreenData.tBouncingBall.s8speedy;
 
   /* border collision */
-  if(s_tLcdState.uScreenData.tBouncingBall.u8x <= 5 || s_tLcdState.uScreenData.tBouncingBall.u8x >= SSD1306_WIDTH - 5)
+  if(s_ptLcdState->uScreenData.tBouncingBall.u8x <= 5 || s_ptLcdState->uScreenData.tBouncingBall.u8x >= SSD1306_WIDTH - 5)
   {
-    s_tLcdState.uScreenData.tBouncingBall.s8speedx = -s_tLcdState.uScreenData.tBouncingBall.s8speedx;
+    s_ptLcdState->uScreenData.tBouncingBall.s8speedx = -s_ptLcdState->uScreenData.tBouncingBall.s8speedx;
   }
 
-  if(s_tLcdState.uScreenData.tBouncingBall.u8y <= 5 || s_tLcdState.uScreenData.tBouncingBall.u8y >= SSD1306_HEIGHT - 5)
+  if(s_ptLcdState->uScreenData.tBouncingBall.u8y <= 5 || s_ptLcdState->uScreenData.tBouncingBall.u8y >= SSD1306_HEIGHT - 5)
   {
-    s_tLcdState.uScreenData.tBouncingBall.s8speedy = -s_tLcdState.uScreenData.tBouncingBall.s8speedy;
+    s_ptLcdState->uScreenData.tBouncingBall.s8speedy = -s_ptLcdState->uScreenData.tBouncingBall.s8speedy;
   }
-
   ssd1306_UpdateScreen();
 }
 
 static void ShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
 {
-  static const uint8_t CENTER_X = 64;
-  static const uint8_t CENTER_Y = 32;
-  static const uint8_t RADIUS = 14;
+  static const uint8_t CENTER_X     = 64;
+  static const uint8_t CENTER_Y     = 32;
+  static const uint8_t RADIUS       = 14;
   static const uint16_t START_ANGLE = 89;
-  static const uint8_t STEP_ANGLE = 15;
+  static const uint8_t STEP_ANGLE   = 15;
 
   ssd1306_Fill(Black);
   ssd1306_SetCursor(0, 0);
   ssd1306_WriteString("Checking config.", Font_6x8, White);
 
   /* Loading Animation */
-  if(s_tLcdState.uScreenData.tLoadingAnimation.bActive)
+  if(s_ptLcdState->uScreenData.tLoadingAnimation.bActive)
   {
-    DrawCircleSegment(CENTER_X, CENTER_Y, RADIUS, START_ANGLE, s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle);
+    DrawCircleSegment(CENTER_X, CENTER_Y, RADIUS, START_ANGLE, s_ptLcdState->uScreenData.tLoadingAnimation.uProgressAngle);
 
-    s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle += STEP_ANGLE;
+    s_ptLcdState->uScreenData.tLoadingAnimation.uProgressAngle += STEP_ANGLE;
 
-    if(s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle >= (FULL_CIRCLE + START_ANGLE))
+    if(s_ptLcdState->uScreenData.tLoadingAnimation.uProgressAngle >= (FULL_CIRCLE + START_ANGLE))
     {
-      s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle = 0;
-      s_tLcdState.uScreenData.tLoadingAnimation.bActive = false; /* Animation finished */
+      s_ptLcdState->uScreenData.tLoadingAnimation.uProgressAngle = 0;
+      s_ptLcdState->uScreenData.tLoadingAnimation.bActive = false; /* Animation finished */
     }
   }
-
   ssd1306_UpdateScreen();
 }
 
 static void ShowIoExchangeScreen(LCD_COMMAND_T* ptLcdPaket)
 {
-  if(s_tLcdState.uScreenData.tAnimation.uFrameIndex < 13)
+  if(s_ptLcdState->uScreenData.tAnimation.uFrameIndex < cat_bitmapallArray_LEN)
   {
     ssd1306_Fill(White);
-    ssd1306_GFX_DrawBitMap(0, 0, cat_bitmapallArray[s_tLcdState.uScreenData.tAnimation.uFrameIndex],
+    ssd1306_GFX_DrawBitMap(0, 0, cat_bitmapallArray[s_ptLcdState->uScreenData.tAnimation.uFrameIndex],
     SSD1306_WIDTH, SSD1306_HEIGHT, Black);
 
-    ++s_tLcdState.uScreenData.tAnimation.uFrameIndex;
-    if(s_tLcdState.uScreenData.tAnimation.uFrameIndex >= cat_bitmapallArray_LEN)
+    ++s_ptLcdState->uScreenData.tAnimation.uFrameIndex;
+    if(s_ptLcdState->uScreenData.tAnimation.uFrameIndex >= cat_bitmapallArray_LEN)
     {
-      s_tLcdState.uScreenData.tAnimation.uFrameIndex = 0;
+      s_ptLcdState->uScreenData.tAnimation.uFrameIndex = 0;
     }
-
     ssd1306_UpdateScreen();
   }
 }
@@ -342,38 +330,40 @@ void LCD_Worker(void *pvParameters)
   LCD_COMMAND_T tNewCommand;
   LCD_COMMAND_T tCurrentCommand = { .eScreen = LCD_IDLE_SCREEN, .pcMessage = "LCD Ready", .pvCustomData = NULL };
 
+  s_ptLcdState->tCurrentCommand = &tCurrentCommand;
+
   ssd1306_Init();
-  LCD_Initialize(tCurrentCommand.eScreen);
+  LCD_InitializeScreen(tCurrentCommand.eScreen);
   ShowIdleScreen(&tCurrentCommand);
 
   while(1)
   {
-    if(xQueueReceive(s_pxLcdQueue, &tNewCommand, 0) == pdPASS)
+    if(xQueueReceive(s_pxLcdQueue, &tNewCommand, 0) == pdTRUE)
     {
       if(tNewCommand.eScreen < LCD_SCREEN_COUNT)
       {
         if(tCurrentCommand.eScreen != tNewCommand.eScreen)
         {
-          LCD_Initialize(tNewCommand.eScreen);
+          LCD_InitializeScreen(tNewCommand.eScreen);
         }
 
         tCurrentCommand = tNewCommand;
-        s_tLcdState.tCurrentCommand = tCurrentCommand;
-        s_tLcdState.ulLastUpdate = xTaskGetTickCount() - s_tLcdState.ulUpdateInterval;
+        s_ptLcdState->tCurrentCommand = &tCurrentCommand;
+        //s_tLcdState.ulLastUpdate = xTaskGetTickCount() - s_tLcdState.ulUpdateInterval;
       }
     }
 
     /* 2. check if it's time for update */
     if(LCD_IsTimeForUpdate())
     {
-      if(s_tLcdState.eCurrentScreen < LCD_SCREEN_COUNT)
+      if(s_ptLcdState->eCurrentScreen < LCD_SCREEN_COUNT)
       {
-        screenFunctions[s_tLcdState.eCurrentScreen](&s_tLcdState.tCurrentCommand);
-        s_tLcdState.ulLastUpdate = xTaskGetTickCount();
+        screenFunctions[s_ptLcdState->eCurrentScreen](s_ptLcdState->tCurrentCommand);
+        s_ptLcdState->ulLastUpdate = xTaskGetTickCount();
       }
     }
 
-    /* 3. Kleine Pause für anderen Tasks */
+    /* 3. delay for cpu schedule */
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 }

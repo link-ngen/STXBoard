@@ -24,14 +24,6 @@ typedef enum
   NEOPXL_UNKNOWN_MODE
 } NEOPXL_MODE_E;
 
-//typedef enum
-//{
-//  NEOPXL_LOW_BRIGHTNESS    = 0x40,   /* 25% */
-//  NEOPXL_MIDDLE_BRIGHTNESS = 0x7F,   /* 50% */
-//  NEOPXL_HIGH_BRIGHTNESS   = 0xBF,   /* 75% */
-//  NEOPXL_MAX_BRIGHTNESS    = 0xFF,   /* 100% */
-//} NEOPXL_BRIGHTNESS_E;
-
 typedef struct NEOPXL_DATA_ITEM_Ttag
 {
   NEOPXL_MODE_E eMode;              /* 1 Byte */
