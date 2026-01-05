@@ -18,24 +18,24 @@ typedef struct NEOPXL_MODE_STATE_Ttag
     /* Rainbow Mode */
     struct
     {
-      uint16_t colorIndex;
-      uint16_t ledIndex;
-      uint8_t cycles;
+      uint16_t usColorIndex;
+      uint16_t usLedIndex;
+      uint8_t bCycles;
     } tRainbow;
 
     /* Blinking/Flashing mode */
     struct
     {
-      bool bOn;             // current on/off
-      uint8_t flashCount;   // num of flash
-      uint8_t maxFlashes;
+      bool fOn;             // current on/off
+      uint8_t bFlashCount;   // num of flash
+      uint8_t bMaxFlashes;
     } tBlink;
 
     /* Continuous Mode Cache */
     struct
     {
-      NEOPXL_RGB_T lastColor;
-      bool initialized;
+      NEOPXL_RGB_T tLastColor;
+      bool fInitialized;
     } tContinuous;
   } modus;
 
@@ -88,48 +88,48 @@ static void Neopxl_InitializeMode(NEOPXL_MODE_E eNewMode)
   switch (eNewMode)
   {
   case NEOPXL_CONTINUOUS_MODE:
-    s_tModeState.modus.tContinuous.initialized = false;
+    s_tModeState.modus.tContinuous.fInitialized = false;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000);
     break;
 
   case NEOPXL_BLINKING_1_MODE:
-    s_tModeState.modus.tBlink.bOn = true;
+    s_tModeState.modus.tBlink.fOn = true;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(500);
     break;
 
   case NEOPXL_BLINKING_2_MODE:
-    s_tModeState.modus.tBlink.bOn = true;
+    s_tModeState.modus.tBlink.fOn = true;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(250);
     break;
 
   case NEOPXL_BLINKING_3_MODE:
-    s_tModeState.modus.tBlink.bOn = true;
+    s_tModeState.modus.tBlink.fOn = true;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(167);
     break;
 
   case NEOPXL_FLASHING_1_MODE:
-    s_tModeState.modus.tBlink.bOn = true;
-    s_tModeState.modus.tBlink.maxFlashes = 1;
+    s_tModeState.modus.tBlink.fOn = true;
+    s_tModeState.modus.tBlink.bMaxFlashes = 1;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(100);
     break;
 
   case NEOPXL_FLASHING_2_MODE:
-    s_tModeState.modus.tBlink.bOn = true;
-    s_tModeState.modus.tBlink.flashCount = 0;
-    s_tModeState.modus.tBlink.maxFlashes = 2;
+    s_tModeState.modus.tBlink.fOn = true;
+    s_tModeState.modus.tBlink.bFlashCount = 0;
+    s_tModeState.modus.tBlink.bMaxFlashes = 2;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(100);
     break;
 
   case NEOPXL_FLASHING_3_MODE:
-    s_tModeState.modus.tBlink.bOn = true;
-    s_tModeState.modus.tBlink.flashCount = 0;
-    s_tModeState.modus.tBlink.maxFlashes = 3;
+    s_tModeState.modus.tBlink.fOn = true;
+    s_tModeState.modus.tBlink.bFlashCount = 0;
+    s_tModeState.modus.tBlink.bMaxFlashes = 3;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(100);
     break;
 
   case NEOPXL_RAINBOW_MODE:
-    s_tModeState.modus.tRainbow.colorIndex = 0;
-    s_tModeState.modus.tRainbow.ledIndex = 0;
+    s_tModeState.modus.tRainbow.usColorIndex = 0;
+    s_tModeState.modus.tRainbow.usLedIndex = 0;
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(50);
     break;
 
@@ -150,15 +150,15 @@ static bool Neopxl_IsTimeForUpdate(void)
 /* Neopixel modus */
 static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  if(!s_tModeState.modus.tContinuous.initialized ||
-      s_tModeState.modus.tContinuous.lastColor.red != s_ptNeopxl->tColor.red ||
-      s_tModeState.modus.tContinuous.lastColor.green != s_ptNeopxl->tColor.green ||
-      s_tModeState.modus.tContinuous.lastColor.blue != s_ptNeopxl->tColor.blue)
+  if(!s_tModeState.modus.tContinuous.fInitialized ||
+      s_tModeState.modus.tContinuous.tLastColor.red != s_ptNeopxl->tColor.red ||
+      s_tModeState.modus.tContinuous.tLastColor.green != s_ptNeopxl->tColor.green ||
+      s_tModeState.modus.tContinuous.tLastColor.blue != s_ptNeopxl->tColor.blue)
   {
     Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
 
-    s_tModeState.modus.tContinuous.initialized = true;
-    s_tModeState.modus.tContinuous.lastColor = s_ptNeopxl->tColor;
+    s_tModeState.modus.tContinuous.fInitialized = true;
+    s_tModeState.modus.tContinuous.tLastColor = s_ptNeopxl->tColor;
   }
 
   s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(1000);
@@ -167,7 +167,7 @@ static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 /* Generic Blinking Handler */
 static void Neopxl_Generic_Blink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTime, uint32_t ulOffTime)
 {
-  if(s_tModeState.modus.tBlink.bOn)
+  if(s_tModeState.modus.tBlink.fOn)
   {
     Neopxl_All_RGB(ptNpxlRsc, s_ptNeopxl->tColor, 1);
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(ulOnTime);
@@ -178,7 +178,7 @@ static void Neopxl_Generic_Blink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTim
     s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(ulOffTime);
   }
 
-  s_tModeState.modus.tBlink.bOn = !s_tModeState.modus.tBlink.bOn;
+  s_tModeState.modus.tBlink.fOn = !s_tModeState.modus.tBlink.fOn;
 }
 
 static void Neopxl_Blinking_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
@@ -209,13 +209,13 @@ static void Neopxl_Generic_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t bFlashPa
 
   const uint16_t *pusPattern = ausPatterns[bFlashPattern];
 
-  uint8_t currentPhase = s_tModeState.modus.tBlink.flashCount;
+  uint8_t currentPhase = s_tModeState.modus.tBlink.bFlashCount;
   uint8_t maxPhases = (bFlashPattern + 1) * 2;
 
   if(currentPhase >= maxPhases)
   {
     currentPhase = 0;
-    s_tModeState.modus.tBlink.flashCount = 0;
+    s_tModeState.modus.tBlink.bFlashCount = 0;
   }
 
   if((currentPhase & 1) == 0) /* modulo 2 */
@@ -230,7 +230,7 @@ static void Neopxl_Generic_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t bFlashPa
   }
 
   s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(pusPattern[currentPhase]);
-  ++s_tModeState.modus.tBlink.flashCount;
+  ++s_tModeState.modus.tBlink.bFlashCount;
 }
 
 static void Neopxl_Flashing_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
@@ -250,21 +250,21 @@ static void Neopxl_Flashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 
 static void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  NEOPXL_RGB_T tNeopxl = Neopxl_Wheel(((s_tModeState.modus.tRainbow.ledIndex * 256 / NEOPXL_NUM_LEDS) + s_tModeState.modus.tRainbow.colorIndex) & 255);
+  NEOPXL_RGB_T tNeopxl = Neopxl_Wheel(((s_tModeState.modus.tRainbow.usLedIndex * 256 / NEOPXL_NUM_LEDS) + s_tModeState.modus.tRainbow.usColorIndex) & 255);
 
-  Neopxl_One_RGB(ptNpxlRsc, s_tModeState.modus.tRainbow.ledIndex, tNeopxl, 0);
-  ++s_tModeState.modus.tRainbow.ledIndex;
+  Neopxl_One_RGB(ptNpxlRsc, s_tModeState.modus.tRainbow.usLedIndex, tNeopxl, 0);
+  ++s_tModeState.modus.tRainbow.usLedIndex;
 
-  if(s_tModeState.modus.tRainbow.ledIndex >= NEOPXL_NUM_LEDS)
+  if(s_tModeState.modus.tRainbow.usLedIndex >= NEOPXL_NUM_LEDS)
   {
-    s_tModeState.modus.tRainbow.ledIndex = 0;
+    s_tModeState.modus.tRainbow.usLedIndex = 0;
     Neopxl_Refresh(ptNpxlRsc);
-    ++s_tModeState.modus.tRainbow.colorIndex;
+    ++s_tModeState.modus.tRainbow.usColorIndex;
 
-    if(s_tModeState.modus.tRainbow.colorIndex >= 256 * 5)
+    if(s_tModeState.modus.tRainbow.usColorIndex >= 256 * 5)
     {
-      s_tModeState.modus.tRainbow.colorIndex = 0;
-      ++s_tModeState.modus.tRainbow.cycles;
+      s_tModeState.modus.tRainbow.usColorIndex = 0;
+      ++s_tModeState.modus.tRainbow.bCycles;
     }
   }
 

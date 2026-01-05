@@ -72,7 +72,7 @@ void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
 
   if (CIFX_NO_ERROR == lRet)
   {
-    OS_Memset(&tNetxProcRsc, 0, sizeof(NETX_PROTOCOL_RSC_T));
+    memset(&tNetxProcRsc, 0, sizeof(NETX_PROTOCOL_RSC_T));
     ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL] = (NETX_PROTOCOL_RSC_T*)&tNetxProcRsc;
     ptNetxRsc->atCommChannels[REALTIME_ETH_CHANNEL]->tProtocolDesc = g_tRealtimeEthernetHandler;
 

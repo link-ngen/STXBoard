@@ -654,7 +654,7 @@ void OS_IrqLock(void* pvOSDependent)
 	/* Only mask DPM interrupt if it was configured */
 	if(s_ptIrqDevInst)
 	{
-		NVIC_DisableIRQ(NETX_DIRQ_EXTI_IRQn);
+	  HAL_NVIC_DisableIRQ(NETX_DIRQ_EXTI_IRQn);
 	}
 }
 
@@ -666,7 +666,7 @@ void OS_IrqUnlock(void* pvOSDependent)
 {
 	if(s_ptIrqDevInst)
 	{
-	    NVIC_EnableIRQ(NETX_DIRQ_EXTI_IRQn);
+	    HAL_NVIC_EnableIRQ(NETX_DIRQ_EXTI_IRQn);
 	}
 }
 #endif

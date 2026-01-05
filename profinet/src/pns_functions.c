@@ -374,8 +374,6 @@ uint32_t  PNS_ConfigureStack(NETX_PROTOCOL_RSC_T* ptProtocolRsc)
   if(SUCCESS_HIL_OK != ptProtocolRsc->tPacket.tHeader.ulState)
     return ptProtocolRsc->tPacket.tHeader.ulState;
 
-
-  ptProtocolRsc->fDeviceIsRunning = true;
   return CIFX_NO_ERROR;
 }
 
