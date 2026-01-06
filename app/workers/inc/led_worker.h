@@ -20,9 +20,9 @@ typedef enum {
   LED_CMD_ERROR_ON,     /* red glowing */
   LED_CMD_ERROR_OFF,    /* red off */
   LED_CMD_COUNT
-} eLedCommand;
+} LED_COMMAND_E;
 
 void LED_Worker(void* pvParameters);
-bool LED_SendCommand(const eLedCommand *ptLedCmd);
+bool LED_SendCommand(const void *ptLedCmd);
 
 #endif /* WORKERS_INC_LED_WORKER_H_ */

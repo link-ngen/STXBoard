@@ -28,6 +28,6 @@ typedef struct {
 
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
-bool LCD_SendCommand(const LCD_COMMAND_T *ptCommand);
+bool LCD_SendCommand(const void *ptCommand);
 
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

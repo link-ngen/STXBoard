@@ -53,7 +53,7 @@ typedef void (*NeopxlHandler)(NEOPXL_RESSOURCE_T *ptNpxlRsc);
 /**
  * Color wheel function
  */
-static NEOPXL_RGB_T Neopxl_Wheel(uint8_t bWheelPos)
+static NEOPXL_RGB_T prvWheel(uint8_t bWheelPos)
 {
   static NEOPXL_RGB_T tRetColor = { 0 };
   if(bWheelPos < 85)
@@ -80,7 +80,7 @@ static NEOPXL_RGB_T Neopxl_Wheel(uint8_t bWheelPos)
 }
 
 /* Initializes state for a new mode */
-static void Neopxl_InitializeMode(NEOPXL_MODE_E eNewMode)
+static void prvInitializeMode(NEOPXL_MODE_E eNewMode)
 {
   memset(&s_tModeState, 0, sizeof(s_tModeState));
   s_tModeState.eCurrentMode = eNewMode;
@@ -141,14 +141,14 @@ static void Neopxl_InitializeMode(NEOPXL_MODE_E eNewMode)
 }
 
 /* Checks whether update time has been reached */
-static bool Neopxl_IsTimeForUpdate(void)
+static bool prvIsTimeForUpdate(void)
 {
   uint32_t ulCurrentTime = xTaskGetTickCount();
   return ((ulCurrentTime - s_tModeState.ulLastUpdate) >= s_tModeState.ulPhaseDuration);
 }
 
 /* Neopixel modus */
-static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvContinuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
   if(!s_tModeState.modus.tContinuous.fInitialized ||
       s_tModeState.modus.tContinuous.tLastColor.red != s_ptNeopxl->tColor.red ||
@@ -165,7 +165,7 @@ static void Neopxl_Continuous(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 }
 
 /* Generic Blinking Handler */
-static void Neopxl_Generic_Blink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTime, uint32_t ulOffTime)
+static void prvGenericBlink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTime, uint32_t ulOffTime)
 {
   if(s_tModeState.modus.tBlink.fOn)
   {
@@ -181,23 +181,23 @@ static void Neopxl_Generic_Blink(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint32_t ulOnTim
   s_tModeState.modus.tBlink.fOn = !s_tModeState.modus.tBlink.fOn;
 }
 
-static void Neopxl_Blinking_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvBlinking_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  Neopxl_Generic_Blink(ptNpxlRsc, 500, 500);
+  prvGenericBlink(ptNpxlRsc, 500, 500);
 }
 
-static void Neopxl_Blinking_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvBlinking_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  Neopxl_Generic_Blink(ptNpxlRsc, 250, 250);
+  prvGenericBlink(ptNpxlRsc, 250, 250);
 }
 
-static void Neopxl_Blinking_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvBlinking_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  Neopxl_Generic_Blink(ptNpxlRsc, 167, 167);
+  prvGenericBlink(ptNpxlRsc, 167, 167);
 }
 
 /* Generic Flashing Handler */
-static void Neopxl_Generic_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t bFlashPattern)
+static void prvGeneric_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t bFlashPattern)
 {
   static const uint16_t ausPatterns[][6] = {
     // {ON, PAUSE} of FLASHING_1_MODE
@@ -233,24 +233,24 @@ static void Neopxl_Generic_Flash(NEOPXL_RESSOURCE_T *ptNpxlRsc, uint8_t bFlashPa
   ++s_tModeState.modus.tBlink.bFlashCount;
 }
 
-static void Neopxl_Flashing_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvFlashing_Mode_1(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  Neopxl_Generic_Flash(ptNpxlRsc, 0);
+  prvGeneric_Flash(ptNpxlRsc, 0);
 }
 
-static void Neopxl_Flashing_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvFlashing_Mode_2(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  Neopxl_Generic_Flash(ptNpxlRsc, 1);
+  prvGeneric_Flash(ptNpxlRsc, 1);
 }
 
-static void Neopxl_Flashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvFlashing_Mode_3(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  Neopxl_Generic_Flash(ptNpxlRsc, 2);
+  prvGeneric_Flash(ptNpxlRsc, 2);
 }
 
-static void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
+static void prvRainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
 {
-  NEOPXL_RGB_T tNeopxl = Neopxl_Wheel(((s_tModeState.modus.tRainbow.usLedIndex * 256 / NEOPXL_NUM_LEDS) + s_tModeState.modus.tRainbow.usColorIndex) & 255);
+  NEOPXL_RGB_T tNeopxl = prvWheel(((s_tModeState.modus.tRainbow.usLedIndex * 256 / NEOPXL_NUM_LEDS) + s_tModeState.modus.tRainbow.usColorIndex) & 255);
 
   Neopxl_One_RGB(ptNpxlRsc, s_tModeState.modus.tRainbow.usLedIndex, tNeopxl, 0);
   ++s_tModeState.modus.tRainbow.usLedIndex;
@@ -271,8 +271,9 @@ static void Neopxl_Rainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
   s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(50);
 }
 
-bool Neopxl_UpdateData(const NEOPXL_DATA_ITEM_T *ptNeopxlData)
+bool Neopxl_UpdateData(const void *pvtNeopxlData)
 {
+  NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)pvtNeopxlData;
   if (ptNeopxlData == NULL ||
       ptNeopxlData->eMode >= NEOPXL_UNKNOWN_MODE)
   {
@@ -292,14 +293,14 @@ void Neopxl_Worker(void *pvParameters)
   s_ptNeopxl = &tCurrentData;
 
   NeopxlHandler neopxlHandlers[] = {
-    [NEOPXL_CONTINUOUS_MODE] = Neopxl_Continuous,
-    [NEOPXL_BLINKING_1_MODE] = Neopxl_Blinking_Mode_1,
-    [NEOPXL_BLINKING_2_MODE] = Neopxl_Blinking_Mode_2,
-    [NEOPXL_BLINKING_3_MODE] = Neopxl_Blinking_Mode_3,
-    [NEOPXL_FLASHING_1_MODE] = Neopxl_Flashing_Mode_1,
-    [NEOPXL_FLASHING_2_MODE] = Neopxl_Flashing_Mode_2,
-    [NEOPXL_FLASHING_3_MODE] = Neopxl_Flashing_Mode_3,
-    [NEOPXL_RAINBOW_MODE]    = Neopxl_Rainbow_Mode
+    [NEOPXL_CONTINUOUS_MODE] = prvContinuous,
+    [NEOPXL_BLINKING_1_MODE] = prvBlinking_Mode_1,
+    [NEOPXL_BLINKING_2_MODE] = prvBlinking_Mode_2,
+    [NEOPXL_BLINKING_3_MODE] = prvBlinking_Mode_3,
+    [NEOPXL_FLASHING_1_MODE] = prvFlashing_Mode_1,
+    [NEOPXL_FLASHING_2_MODE] = prvFlashing_Mode_2,
+    [NEOPXL_FLASHING_3_MODE] = prvFlashing_Mode_3,
+    [NEOPXL_RAINBOW_MODE]    = prvRainbow_Mode
   };
 
   NEOPXL_RESSOURCE_T tNeopxlRsc = { 0 };
@@ -307,7 +308,7 @@ void Neopxl_Worker(void *pvParameters)
   tNeopxlRsc.ulTimChannel = TIM_CHANNEL_2;
 
   Neopxl_Init(&tNeopxlRsc);
-  Neopxl_InitializeMode(tCurrentData.eMode);
+  prvInitializeMode(tCurrentData.eMode);
 
   while(1)
   {
@@ -320,7 +321,7 @@ void Neopxl_Worker(void *pvParameters)
         if(tCurrentData.eMode != tNewData.eMode)
         {
           Neopxl_Clear(&tNeopxlRsc);
-          Neopxl_InitializeMode(tNewData.eMode);
+          prvInitializeMode(tNewData.eMode);
         }
 
         tCurrentData = tNewData;
@@ -329,7 +330,7 @@ void Neopxl_Worker(void *pvParameters)
     }
 
     /* check if it's time for update */
-    if(Neopxl_IsTimeForUpdate())
+    if(prvIsTimeForUpdate())
     {
       neopxlHandlers[s_ptNeopxl->eMode](&tNeopxlRsc);
       s_tModeState.ulLastUpdate = xTaskGetTickCount();

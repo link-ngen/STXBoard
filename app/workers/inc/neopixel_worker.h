@@ -33,6 +33,6 @@ typedef struct NEOPXL_DATA_ITEM_Ttag
 
 /* ================= PUBLIC API ================= */
 void Neopxl_Worker(void *pvParameters); /* params queue and command */
-bool Neopxl_UpdateData(const NEOPXL_DATA_ITEM_T *ptNeopxlData);
+bool Neopxl_UpdateData(const void *ptNeopxlData);
 
 #endif /* WORKERS_INC_NEOPIXEL_WORKER_H_ */

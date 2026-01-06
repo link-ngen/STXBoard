@@ -8,10 +8,10 @@
 #ifndef MANAGER_INC_APP_MANAGER_H_
 #define MANAGER_INC_APP_MANAGER_H_
 
+#include "app_defines.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
-
 #include "netx_worker.h"
 
 typedef struct APP_QUEUE_Ttag
@@ -34,8 +34,10 @@ struct FreeRTOS_THREAD_Ttag
 
 typedef struct APP_MANANGER_RSC_Ttag
 {
-  APP_QUEUE_T     tAppQueues;
-  NETX_APP_RSC_T *ptNetxRsc;
+  //APP_QUEUE_T       tAppQueues;
+  QUEUE_CONFIG_T    ptTaskQueueConfig[QUEUE_ID_COUNT];
+  NETX_APP_RSC_T    *ptNetxRsc;
+  bool              fInitialized;
 } APP_MANANGER_RSC_T;
 
 void AppManager_Init();

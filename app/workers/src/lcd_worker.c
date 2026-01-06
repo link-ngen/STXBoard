@@ -148,7 +148,7 @@ static void ShowVertexScreen(LCD_COMMAND_T* ptLcdPaket)
 #endif
 
 
-static void LCD_InitializeScreen(LCD_SCREEN_E eScreen)
+static void prvInitializeScreen(LCD_SCREEN_E eScreen)
 {
   memset(&s_tLcdState.uScreenData, 0, sizeof(s_tLcdState.uScreenData));
   s_tLcdState.eCurrentScreen = eScreen;
@@ -186,13 +186,13 @@ static void LCD_InitializeScreen(LCD_SCREEN_E eScreen)
   s_tLcdState.ulLastUpdate = xTaskGetTickCount();
 }
 
-static bool LCD_IsTimeForUpdate(void)
+static bool prvIsTimeForUpdate(void)
 {
   uint32_t ulCurrentTime = xTaskGetTickCount();
   return ((ulCurrentTime - s_tLcdState.ulLastUpdate) >= s_tLcdState.ulUpdateInterval);
 }
 
-static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
+static void prvDrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint16_t startAngle, uint16_t endAngle)
 {
   for(uint16_t angle = startAngle; angle <= endAngle; ++angle)
   {
@@ -203,7 +203,7 @@ static void DrawCircleSegment(uint8_t x0, uint8_t y0, const uint8_t radius, uint
   }
 }
 
-static void ShowIdleScreen(LCD_COMMAND_T* ptLcdPaket)
+static void prvShowIdleScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_SetCursor(0, 0);
@@ -213,7 +213,7 @@ static void ShowIdleScreen(LCD_COMMAND_T* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-static void ShowBootScreen(LCD_COMMAND_T* ptLcdPaket)
+static void prvShowBootScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_SetCursor(0, 0);
@@ -223,7 +223,7 @@ static void ShowBootScreen(LCD_COMMAND_T* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-static void ShowBouncingBallScreen(LCD_COMMAND_T *ptLcdPaket)
+static void prvShowBouncingBallScreen(LCD_COMMAND_T *ptLcdPaket)
 {
   /* Bouncing Ball */
   ssd1306_Fill(Black);
@@ -246,7 +246,7 @@ static void ShowBouncingBallScreen(LCD_COMMAND_T *ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-static void ShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
+static void prvShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   static const uint8_t CENTER_X     = 64;
   static const uint8_t CENTER_Y     = 32;
@@ -261,7 +261,7 @@ static void ShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
   /* Loading Animation */
   if(s_tLcdState.uScreenData.tLoadingAnimation.fActive)
   {
-    DrawCircleSegment(CENTER_X, CENTER_Y, RADIUS, START_ANGLE, s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle);
+    prvDrawCircleSegment(CENTER_X, CENTER_Y, RADIUS, START_ANGLE, s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle);
 
     s_tLcdState.uScreenData.tLoadingAnimation.uProgressAngle += STEP_ANGLE;
 
@@ -274,7 +274,7 @@ static void ShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-static void ShowIoExchangeScreen(LCD_COMMAND_T* ptLcdPaket)
+static void prvShowIoExchangeScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   if(s_tLcdState.uScreenData.tAnimation.uFrameIndex < cat_bitmapallArray_LEN)
   {
@@ -291,7 +291,7 @@ static void ShowIoExchangeScreen(LCD_COMMAND_T* ptLcdPaket)
   }
 }
 
-static void ShowErrorScreen(LCD_COMMAND_T* ptLcdPaket)
+static void prvShowErrorScreen(LCD_COMMAND_T* ptLcdPaket)
 {
   ssd1306_Fill(Black);
   ssd1306_SetCursor(0, 0);
@@ -301,8 +301,10 @@ static void ShowErrorScreen(LCD_COMMAND_T* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-bool LCD_SendCommand(const LCD_COMMAND_T *ptCommand)
+bool LCD_SendCommand(const void *pvtCommand)
 {
+  LCD_COMMAND_T *ptCommand = (LCD_COMMAND_T*)pvtCommand;
+
   if(s_xLcdQueue == NULL ||
     ptCommand == NULL ||
     ptCommand->eScreen >= LCD_SCREEN_COUNT)
@@ -319,12 +321,12 @@ void LCD_Worker(void *pvParameters)
   s_xLcdQueue = (QueueHandle_t)pvParameters;
 
   LCD_ScreenFunction_t screenFunctions[] = {
-      [LCD_IDLE_SCREEN]       = ShowIdleScreen,
-      [LCD_BOOT_SCREEN]       = ShowBootScreen,
-      [LCD_CONFIG_SCREEN]     = ShowConfigScreen,
-      [LCD_VERTEX_SCREEN]     = ShowBouncingBallScreen, //,ShowBouncingBallScreen
-      [LCD_ERROR_SCREEN]      = ShowErrorScreen,
-      [LCD_IOXCHANGE_SCREEN]  = ShowIoExchangeScreen
+      [LCD_IDLE_SCREEN]       = prvShowIdleScreen,
+      [LCD_BOOT_SCREEN]       = prvShowBootScreen,
+      [LCD_CONFIG_SCREEN]     = prvShowConfigScreen,
+      [LCD_VERTEX_SCREEN]     = prvShowBouncingBallScreen, //,ShowBouncingBallScreen
+      [LCD_ERROR_SCREEN]      = prvShowErrorScreen,
+      [LCD_IOXCHANGE_SCREEN]  = prvShowIoExchangeScreen
   };
 
   LCD_COMMAND_T tNewCommand;
@@ -333,8 +335,8 @@ void LCD_Worker(void *pvParameters)
   s_tLcdState.ptCurrentCommand = &tCurrentCommand;
 
   ssd1306_Init();
-  LCD_InitializeScreen(tCurrentCommand.eScreen);
-  ShowIdleScreen(&tCurrentCommand);
+  prvInitializeScreen(tCurrentCommand.eScreen);
+  prvShowIdleScreen(&tCurrentCommand);
 
   while(1)
   {
@@ -344,7 +346,7 @@ void LCD_Worker(void *pvParameters)
       {
         if(tCurrentCommand.eScreen != tNewCommand.eScreen)
         {
-          LCD_InitializeScreen(tNewCommand.eScreen);
+          prvInitializeScreen(tNewCommand.eScreen);
         }
 
         tCurrentCommand = tNewCommand;
@@ -353,7 +355,7 @@ void LCD_Worker(void *pvParameters)
     }
 
     /* 2. check if it's time for update */
-    if(LCD_IsTimeForUpdate())
+    if(prvIsTimeForUpdate())
     {
       screenFunctions[s_tLcdState.eCurrentScreen](s_tLcdState.ptCurrentCommand);
       s_tLcdState.ulLastUpdate = xTaskGetTickCount();

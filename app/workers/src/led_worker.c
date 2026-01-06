@@ -9,34 +9,34 @@
 
 typedef void (*LedCommandHandler_t)(void);
 
-static eLedCommand s_eCmd;
+static LED_COMMAND_E s_eCmd;
 static QueueHandle_t s_pxQueue;
 
-static void Led_ConfigBlink(void)
+static void prvConfigBlink(void)
 {
   Led_ToggleConfigRun();
   Led_DisableError();
   vTaskDelay(pdMS_TO_TICKS(127));
 }
 
-static void Led_RunOn(void)
+static void prvRunOn(void)
 {
   Led_EnableConfigRun();
   Led_DisableError();
 }
 
-static void Led_Configured(void)
+static void prvConfigured(void)
 {
   Led_EnableConfigured();
   Led_DisableError();
 }
 
-static void Led_ErrorOff(void)
+static void prvErrorOff(void)
 {
   Led_DisableError();
 }
 
-static void Led_ErrorOn(void)
+static void prvErrorOn(void)
 {
   Led_ToggleConfigRun();
   Led_EnableError();
@@ -52,8 +52,10 @@ static void Led_ErrorOn(void)
  * @note ERROR_ON command always has priority and overwrites any previous command
  * @note Duplicate commands (except ERROR_ON) are ignored to reduce queue traffic
  */
-bool LED_SendCommand(const eLedCommand *ptLedCmd)
+bool LED_SendCommand(const void *pvtLedCmd)
 {
+  LED_COMMAND_E *ptLedCmd = (LED_COMMAND_E*)pvtLedCmd;
+
   // Validate input parameters
   if((ptLedCmd == NULL) || (*ptLedCmd >= LED_CMD_COUNT))
   {
@@ -63,7 +65,7 @@ bool LED_SendCommand(const eLedCommand *ptLedCmd)
   // ERROR_ON command has highest priority - always send and overwrite
   if(*ptLedCmd == LED_CMD_ERROR_ON)
   {
-    eLedCommand tTmp = LED_CMD_ERROR_ON;
+    LED_COMMAND_E tTmp = LED_CMD_ERROR_ON;
     xQueueOverwrite(s_pxQueue, &tTmp);        // Force overwrite in queue
     s_eCmd = LED_CMD_ERROR_ON;       // Update global state
     return true;
@@ -76,7 +78,7 @@ bool LED_SendCommand(const eLedCommand *ptLedCmd)
   }
 
   // Send normal command to queue
-  eLedCommand tTmp = *ptLedCmd;
+  LED_COMMAND_E tTmp = *ptLedCmd;
   if(xQueueOverwrite(s_pxQueue, &tTmp) == pdPASS)
   {
     s_eCmd = *ptLedCmd;  // Update last sent command
@@ -89,11 +91,11 @@ bool LED_SendCommand(const eLedCommand *ptLedCmd)
 void LED_Worker(void* pvParameters)
 {
   LedCommandHandler_t ledCommandHandlers[] = {
-      [LED_CMD_CONFIGURING]   = Led_ConfigBlink,
-      [LED_CMD_RUN_ON]        = Led_RunOn,
-      [LED_CMD_CONFIGURED]    = Led_Configured,
-      [LED_CMD_ERROR_OFF]     = Led_ErrorOff,
-      [LED_CMD_ERROR_ON]      = Led_ErrorOn
+      [LED_CMD_CONFIGURING]   = prvConfigBlink,
+      [LED_CMD_RUN_ON]        = prvRunOn,
+      [LED_CMD_CONFIGURED]    = prvConfigured,
+      [LED_CMD_ERROR_OFF]     = prvErrorOff,
+      [LED_CMD_ERROR_ON]      = prvErrorOn
   };
 
   s_pxQueue = (QueueHandle_t)pvParameters;
