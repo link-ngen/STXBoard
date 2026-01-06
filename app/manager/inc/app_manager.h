@@ -9,17 +9,8 @@
 #define MANAGER_INC_APP_MANAGER_H_
 
 #include "app_defines.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+#include "task_messaging.h"
 #include "netx_worker.h"
-
-typedef struct APP_QUEUE_Ttag
-{
-  QueueHandle_t ledQueue;
-  QueueHandle_t lcdQueue;
-  QueueHandle_t neopixelQueue;
-} APP_QUEUE_T;
 
 typedef struct FreeRTOS_THREAD_Ttag FreeRTOS_THREAD_T;
 struct FreeRTOS_THREAD_Ttag
@@ -34,7 +25,6 @@ struct FreeRTOS_THREAD_Ttag
 
 typedef struct APP_MANANGER_RSC_Ttag
 {
-  //APP_QUEUE_T       tAppQueues;
   QUEUE_CONFIG_T    ptTaskQueueConfig[QUEUE_ID_COUNT];
   NETX_APP_RSC_T    *ptNetxRsc;
   bool              fInitialized;

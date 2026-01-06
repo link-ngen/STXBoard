@@ -33,7 +33,7 @@ static QueueHandle_t prvGetQueueHandle(MSG_QUEUE_ID_E eId)
     return NULL;
   }
 
-  QueueHandle_t hQueue = s_ptQueueTable[eId].handle;
+  QueueHandle_t hQueue = s_ptQueueTable[eId].xtQueueHandle;
   if(NULL != hQueue)
   {
     UBaseType_t uxLength = uxQueueMessagesWaiting(hQueue);
@@ -52,19 +52,19 @@ BaseType_t TaskMsg_Init(QUEUE_CONFIG_T *ptQueueConfig)
   }
 
   /* create queues */
-  for (MSG_QUEUE_ID_E queueId = QUEUE_ID_LED_WORKER; queueId < QUEUE_ID_COUNT; ++queueId)
+  for (MSG_QUEUE_ID_E queueId = 0; queueId < QUEUE_ID_COUNT; ++queueId)
   {
-    ptQueueConfig[queueId].handle = xQueueCreate(ptQueueConfig[queueId].length, ptQueueConfig[queueId].itemSize);
+    ptQueueConfig[queueId].xtQueueHandle = xQueueCreate(ptQueueConfig[queueId].ulQueueLength, ptQueueConfig[queueId].ulItemSize);
 
-    if (NULL == ptQueueConfig[queueId].handle)
+    if (NULL == ptQueueConfig[queueId].xtQueueHandle)
     {
       /* if something wrong, delete all created queue */
-      for (MSG_QUEUE_ID_E createdQueue = QUEUE_ID_LED_WORKER; createdQueue < queueId; ++createdQueue)
+      for (MSG_QUEUE_ID_E createdQueue = 0; createdQueue < queueId; ++createdQueue)
       {
-        if (NULL != ptQueueConfig[createdQueue].handle)
+        if (NULL != ptQueueConfig[createdQueue].xtQueueHandle)
         {
-          vQueueDelete(ptQueueConfig[createdQueue].handle);
-          ptQueueConfig[createdQueue].handle = NULL;
+          vQueueDelete(ptQueueConfig[createdQueue].xtQueueHandle);
+          ptQueueConfig[createdQueue].xtQueueHandle = NULL;
         }
       }
 
@@ -104,7 +104,7 @@ BaseType_t TaskMsg_SendTo(MSG_QUEUE_ID_E eReceiverId, const void *pvData, TickTy
   QueueHandle_t hQueue = prvGetQueueHandle(eReceiverId);
   if (NULL != hQueue)
   {
-    xResult = s_ptQueueTable[eReceiverId].pfnHandler(pvData);
+    xResult = s_ptQueueTable[eReceiverId].pfnCmdCallback(pvData);
   }
 
   xSemaphoreGive(s_xTaskMsgMutex);
@@ -113,5 +113,19 @@ BaseType_t TaskMsg_SendTo(MSG_QUEUE_ID_E eReceiverId, const void *pvData, TickTy
 
 void TaskMsg_Deinit(void)
 {
+  if(xSemaphoreTake(s_xTaskMsgMutex, pdMS_TO_TICKS(10)) == pdTRUE)
+  {
+    for(MSG_QUEUE_ID_E queueId = QUEUE_ID_LED_WORKER; queueId < QUEUE_ID_COUNT; ++queueId)
+    {
+      if(NULL != s_ptQueueTable[queueId].xtQueueHandle)
+      {
+        vQueueDelete(s_ptQueueTable[queueId].xtQueueHandle);
+        s_ptQueueTable[queueId].xtQueueHandle = NULL;
+      }
+    }
 
+    xSemaphoreGive(s_xTaskMsgMutex);
+    vSemaphoreDelete(s_xTaskMsgMutex);
+    s_xTaskMsgMutex = NULL;
+  }
 }

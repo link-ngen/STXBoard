@@ -8,24 +8,9 @@
 #ifndef MANAGER_INC_APP_DEFINES_H_
 #define MANAGER_INC_APP_DEFINES_H_
 
-#include <stdbool.h>
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "semphr.h"
-#include "task.h"
-
 #define MSG_LED_QUEUE_LEN     1
 #define MSG_LCD_QUEUE_LEN     1
 #define MSG_NEOPXL_QUEUE_LEN  1
-
-typedef bool (*WorkerSendCmdCallback)(const void *pvUserData);
-typedef struct
-{
-  QueueHandle_t handle;
-  uint32_t length;
-  uint32_t itemSize;
-  WorkerSendCmdCallback pfnHandler;
-} QUEUE_CONFIG_T;
 
 /**
  * @brief All available queues in the system
@@ -41,6 +26,17 @@ typedef enum
   QUEUE_ID_COUNT,                ///< Total number of queues (MUST be last element!)
 } MSG_QUEUE_ID_E;
 
+/* AppManager Commandos */
+//typedef enum {
+//    APP_CMD_UPDATE_SIGNAL_LED = 0x10,
+//    APP_CMD_UPDATE_LCD,
+//    APP_CMD_UPDATE_NEOPIXEL_FROM_PLC,
+//    APP_CMD_,
+//    APP_CMD_SYSTEM_STANDBY,
+//    APP_CMD_SYSTEM_STARTUP,
+//    APP_CMD_FACTORY_RESET,
+//    APP_CMD_UPDATE_NETWORK_CONFIG
+//} eAppManagerCommand;
 
 /* Debug function enable */
 // #define DBG_ENABLE_LOGGING

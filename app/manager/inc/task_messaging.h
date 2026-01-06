@@ -12,6 +12,20 @@
 #include <stdbool.h>
 #include "app_defines.h"
 
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+#include "task.h"
+
+typedef bool (*WorkerSendCmdCallback)(const void *pvUserData);
+typedef struct
+{
+  QueueHandle_t xtQueueHandle;
+  uint32_t ulQueueLength;
+  uint32_t ulItemSize;
+  WorkerSendCmdCallback pfnCmdCallback;
+} QUEUE_CONFIG_T;
+
 BaseType_t TaskMsg_Init(QUEUE_CONFIG_T *ptQueueConfig);
 QueueHandle_t TaskMsg_GetQueue(MSG_QUEUE_ID_E eReceiverId);
 BaseType_t TaskMsg_SendTo(MSG_QUEUE_ID_E eReceiverId, const void *pvData, TickType_t xTicksToWait);
