@@ -6,6 +6,7 @@
  */
 
 #include "led_worker.h"
+#include "queue.h"
 
 typedef void (*LedCommandHandler_t)(void);
 
@@ -52,8 +53,9 @@ static void prvErrorOn(void)
  * @note ERROR_ON command always has priority and overwrites any previous command
  * @note Duplicate commands (except ERROR_ON) are ignored to reduce queue traffic
  */
-bool LED_SendCommand(const void *pvtLedCmd)
+bool LED_SendCommand(const void *pvtLedCmd, TickType_t xTicksToWait)
 {
+  UNUSED(xTicksToWait);
   LED_COMMAND_E *ptLedCmd = (LED_COMMAND_E*)pvtLedCmd;
 
   // Validate input parameters

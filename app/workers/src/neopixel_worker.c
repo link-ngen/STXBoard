@@ -7,10 +7,6 @@
 #include <string.h>
 #include "neopixel_worker.h"
 
-#include "tim.h"
-#include "FreeRTOS.h"
-#include "queue.h"
-
 typedef struct NEOPXL_MODE_STATE_Ttag
 {
   union
@@ -271,8 +267,9 @@ static void prvRainbow_Mode(NEOPXL_RESSOURCE_T *ptNpxlRsc)
   s_tModeState.ulPhaseDuration = pdMS_TO_TICKS(50);
 }
 
-bool Neopxl_UpdateData(const void *pvtNeopxlData)
+bool Neopxl_UpdateData(const void *pvtNeopxlData, TickType_t xTicksToWait)
 {
+  UNUSED(xTicksToWait);
   NEOPXL_DATA_ITEM_T *ptNeopxlData = (NEOPXL_DATA_ITEM_T*)pvtNeopxlData;
   if (ptNeopxlData == NULL ||
       ptNeopxlData->eMode >= NEOPXL_UNKNOWN_MODE)

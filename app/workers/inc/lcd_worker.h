@@ -9,6 +9,7 @@
 #define WORKERS_INC_LCD_WORKER_H_
 
 #include <stdbool.h>
+#include "FreeRTOS.h"
 
 typedef enum {
   LCD_IDLE_SCREEN=0,    /* screen if no activities        */
@@ -28,6 +29,6 @@ typedef struct {
 
 void LCD_OctahedronWorker(void *pvParameters);
 void LCD_Worker(void *pvParameters);
-bool LCD_SendCommand(const void *ptCommand);
+bool LCD_SendCommand(const void *ptCommand, TickType_t xTicksToWait);
 
 #endif /* WORKERS_INC_LCD_WORKER_H_ */

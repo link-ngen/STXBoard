@@ -17,7 +17,7 @@
 #include "semphr.h"
 #include "task.h"
 
-typedef bool (*WorkerSendCmdCallback)(const void *pvUserData);
+typedef bool (*WorkerSendCmdCallback)(const void *pvUserData, TickType_t xTicksToWait);
 typedef struct
 {
   QueueHandle_t xtQueueHandle;

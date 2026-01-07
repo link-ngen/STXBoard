@@ -12,9 +12,10 @@
 #include "app_manager.h"
 #include "ssd1306.h"
 #include "ssd1306_gfx.h"
-#include "OS_Dependent.h"
+//#include "OS_Dependent.h"
 
-#include "cat_frames.h"
+//#include "cat_frames.h"
+#include "cat_animation.h"
 
 #define PI_180      0.0174532
 #define FULL_CIRCLE 360
@@ -166,7 +167,7 @@ static void prvInitializeScreen(LCD_SCREEN_E eScreen)
   case LCD_IOXCHANGE_SCREEN:
     s_tLcdState.uScreenData.tAnimation.uFrameIndex = 0;
     s_tLcdState.uScreenData.tAnimation.uLastFrameTime = 0;
-    s_tLcdState.ulUpdateInterval = pdMS_TO_TICKS(50);
+    s_tLcdState.ulUpdateInterval = pdMS_TO_TICKS(100);
     break;
 
   case LCD_CONFIG_SCREEN:
@@ -276,14 +277,14 @@ static void prvShowConfigScreen(LCD_COMMAND_T* ptLcdPaket)
 
 static void prvShowIoExchangeScreen(LCD_COMMAND_T* ptLcdPaket)
 {
-  if(s_tLcdState.uScreenData.tAnimation.uFrameIndex < cat_bitmapallArray_LEN)
+  if(s_tLcdState.uScreenData.tAnimation.uFrameIndex < cat_allArray_LEN)
   {
     ssd1306_Fill(White);
-    ssd1306_GFX_DrawBitMap(0, 0, cat_bitmapallArray[s_tLcdState.uScreenData.tAnimation.uFrameIndex],
+    ssd1306_GFX_DrawBitMap(0, 0, cat_allArray[s_tLcdState.uScreenData.tAnimation.uFrameIndex],
     SSD1306_WIDTH, SSD1306_HEIGHT, Black);
 
     ++s_tLcdState.uScreenData.tAnimation.uFrameIndex;
-    if(s_tLcdState.uScreenData.tAnimation.uFrameIndex >= cat_bitmapallArray_LEN)
+    if(s_tLcdState.uScreenData.tAnimation.uFrameIndex >= cat_allArray_LEN)
     {
       s_tLcdState.uScreenData.tAnimation.uFrameIndex = 0;
     }
@@ -301,8 +302,9 @@ static void prvShowErrorScreen(LCD_COMMAND_T* ptLcdPaket)
   ssd1306_UpdateScreen();
 }
 
-bool LCD_SendCommand(const void *pvtCommand)
+bool LCD_SendCommand(const void *pvtCommand, TickType_t xTicksToWait)
 {
+  UNUSED(xTicksToWait);
   LCD_COMMAND_T *ptCommand = (LCD_COMMAND_T*)pvtCommand;
 
   if(s_xLcdQueue == NULL ||

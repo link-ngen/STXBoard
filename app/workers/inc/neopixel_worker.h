@@ -9,6 +9,9 @@
 #define WORKERS_INC_NEOPIXEL_WORKER_H_
 
 #include <stdbool.h>
+#include "tim.h"
+#include "FreeRTOS.h"
+#include "queue.h"
 #include "neopixel.h"
 
 typedef enum
@@ -33,6 +36,6 @@ typedef struct NEOPXL_DATA_ITEM_Ttag
 
 /* ================= PUBLIC API ================= */
 void Neopxl_Worker(void *pvParameters); /* params queue and command */
-bool Neopxl_UpdateData(const void *ptNeopxlData);
+bool Neopxl_UpdateData(const void *ptNeopxlData, TickType_t xTicksToWait);
 
 #endif /* WORKERS_INC_NEOPIXEL_WORKER_H_ */

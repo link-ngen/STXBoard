@@ -24,34 +24,34 @@ static const NetxStateDescriptor_t NETX_STATE_PREOP_DESC = { NETX_STATE_PREOP, S
 static const NetxStateDescriptor_t NETX_STATE_OP_DESC    = { NETX_STATE_OP,    State_NetxOP    };
 static const NetxStateDescriptor_t NETX_STATE_ERROR_DESC = { NETX_STATE_ERROR, State_NetxError };
 
-static void NetX_OnEnterState(NETX_APP_RSC_T *ptNetxRsc, NetxStateId_e tNextStateId)
-{
-  switch (tNextStateId)
-  {
-  case NETX_STATE_INIT:
-    ptNetxRsc->tLedCmd = LED_CMD_CONFIGURING;
-    ptNetxRsc->tLcdCommand.eScreen = LCD_CONFIG_SCREEN;
-    break;
+//static void prvOnEnterState(NETX_APP_RSC_T *ptNetxRsc, NetxStateId_e tNextStateId)
+//{
+//  switch (tNextStateId)
+//  {
+//  case NETX_STATE_INIT:
+//    ptNetxRsc->tLedCmd = LED_CMD_CONFIGURING;
+//    ptNetxRsc->tLcdCommand.eScreen = LCD_CONFIG_SCREEN;
+//    break;
+//
+//  case NETX_STATE_PREOP:
+//    ptNetxRsc->tLedCmd = LED_CMD_CONFIGURED;
+//    ptNetxRsc->tLcdCommand.eScreen = LCD_VERTEX_SCREEN;
+//    break;
+//
+//  case NETX_STATE_OP:
+//    ptNetxRsc->tLedCmd = LED_CMD_RUN_ON;
+//    ptNetxRsc->tLcdCommand.eScreen = LCD_IOXCHANGE_SCREEN;
+//    break;
+//
+//  case NETX_STATE_ERROR:
+//  default:
+//    ptNetxRsc->tLedCmd = LED_CMD_ERROR_ON;
+//    ptNetxRsc->tLcdCommand.eScreen = LCD_ERROR_SCREEN;
+//    break;
+//  }
+//}
 
-  case NETX_STATE_PREOP:
-    ptNetxRsc->tLedCmd = LED_CMD_CONFIGURED;
-    ptNetxRsc->tLcdCommand.eScreen = LCD_VERTEX_SCREEN;
-    break;
-
-  case NETX_STATE_OP:
-    ptNetxRsc->tLedCmd = LED_CMD_RUN_ON;
-    ptNetxRsc->tLcdCommand.eScreen = LCD_IOXCHANGE_SCREEN;
-    break;
-
-  case NETX_STATE_ERROR:
-  default:
-    ptNetxRsc->tLedCmd = LED_CMD_ERROR_ON;
-    ptNetxRsc->tLcdCommand.eScreen = LCD_ERROR_SCREEN;
-    break;
-  }
-}
-
-static void NetX_FSMTransition(NETX_APP_RSC_T *ptNetxRsc, const NetxStateDescriptor_t *ptNextState)
+static void prvFSMTransition(NETX_APP_RSC_T *ptNetxRsc, const NetxStateDescriptor_t *ptNextState)
 {
   if(ptNetxRsc->currentState->id == ptNextState->id)
     return;
@@ -59,8 +59,8 @@ static void NetX_FSMTransition(NETX_APP_RSC_T *ptNetxRsc, const NetxStateDescrip
   ptNetxRsc->previousState = ptNetxRsc->currentState;
   ptNetxRsc->currentState = ptNextState;
 
-  NetX_OnEnterState(ptNetxRsc, ptNextState->id);
-  AppManager_UpdatePeripherals(ptNetxRsc);
+//  prvOnEnterState(ptNetxRsc, ptNextState->id);
+//  AppManager_UpdatePeripherals(ptNetxRsc);
 }
 
 static NETX_PROTOCOL_RSC_T tNetxProcRsc;
@@ -84,13 +84,12 @@ void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
     lRet = xDriverOpen(&ptNetxRsc->hDriver);
     if (CIFX_NO_ERROR != lRet)
     {
-      snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "DrvOpen err \n");
+      AppManager_SendCommand(APP_CMD_NETX_INIT_ERR);
       ptNetxStateDesc = &NETX_STATE_ERROR_DESC;
     }
     else /* CifXToolkit driver open succeed */
     {
-      snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "DrvOpen ok\n");
-      AppManager_CallRedFlashingMode(ptNetxRsc);
+      AppManager_SendCommand(APP_CMD_NETX_INIT_OK);
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
     }
   }
@@ -98,7 +97,7 @@ void State_NetxInit(NETX_APP_RSC_T *ptNetxRsc)
   {
     ptNetxStateDesc = &NETX_STATE_ERROR_DESC;
   }
-  NetX_FSMTransition(ptNetxRsc, ptNetxStateDesc);
+  prvFSMTransition(ptNetxRsc, ptNetxStateDesc);
   ptNetxRsc->previousState = &NETX_STATE_INIT_DESC;
 }
 
@@ -111,9 +110,9 @@ void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
     if((CIFX_NO_ERROR != NetX_InitializeChannels(ptNetxRsc, "cifX0")) ||
       (CIFX_NO_ERROR != NetX_ConfigureChannels(ptNetxRsc)))
     {
-      snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "NetX config error\n");
       ++ptNetxRsc->bInitErrCounter;
-      NetX_FSMTransition(ptNetxRsc, &NETX_STATE_ERROR_DESC);
+      AppManager_SendCommand(APP_CMD_NETX_CONFIG_ERR);
+      prvFSMTransition(ptNetxRsc, &NETX_STATE_ERROR_DESC);
       return;
     }
   }
@@ -127,15 +126,17 @@ void State_NetxPreOP(NETX_APP_RSC_T *ptNetxRsc)
   /*XXX: To access the operating mode, some hilscher firmware requires the xChannelIORead or Write function.  */
   if(commState & HIL_COMM_STATE_OPERATE)
   {
+    AppManager_SendCommand(APP_CMD_NETX_PLC_CONNECTED);
     ptNetxStateDesc = &NETX_STATE_OP_DESC;
     xTimerChangePeriod(ptNetxRsc->hCyclicTimer, pdMS_TO_TICKS(IO_CYCLE_TIME), 1);
   }
   else /* if stack is not in OP -> no communication with a PLC or controller */
   {
+    AppManager_SendCommand(APP_CMD_NETX_PLC_DISCONNECTED);
     ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
   }
 
-  NetX_FSMTransition(ptNetxRsc, ptNetxStateDesc);
+  prvFSMTransition(ptNetxRsc, ptNetxStateDesc);
   ptNetxRsc->previousState = &NETX_STATE_PREOP_DESC;
 }
 
@@ -156,26 +157,28 @@ void State_NetxOP(NETX_APP_RSC_T *ptNetxRsc)
     case CIFX_NO_ERROR:
       /* Process input data and prepare for the next write to the field bus */
       // TODO: process io data. Send input data to other task and get the output data from other task
-      AppManager_UpdateNeopixelDataFromPLC(ptNetxRsc);
+      //AppManager_UpdateNeopixelDataFromPLC(ptNetxRsc);
+      AppManager_SendCommand(APP_CMD_NETX_UPDATE_IODATA);
       ptNetxStateDesc = &NETX_STATE_OP_DESC;
       break;
 
     case CIFX_DEV_NO_COM_FLAG:
-      AppManager_CallRedFlashingMode(ptNetxRsc);
+      //AppManager_CallRedFlashingMode(ptNetxRsc);
+      AppManager_SendCommand(APP_CMD_NETX_PLC_DISCONNECTED);
       ptNetxStateDesc = &NETX_STATE_PREOP_DESC;
       xTimerChangePeriod(ptNetxRsc->hCyclicTimer, pdMS_TO_TICKS(1), 1);
       break;
 
     case CIFX_DEV_EXCHANGE_FAILED:
     default:
-      snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "ChnCom failed \n");
+      AppManager_SendCommand(APP_CMD_NETX_DPM_ERR);
       ptNetxStateDesc = &NETX_STATE_ERROR_DESC;
       xTimerChangePeriod(ptNetxRsc->hCyclicTimer, pdMS_TO_TICKS(1), 1);
       break;
     }
   }
 
-  NetX_FSMTransition(ptNetxRsc, ptNetxStateDesc);
+  prvFSMTransition(ptNetxRsc, ptNetxStateDesc);
   ptNetxRsc->previousState = &NETX_STATE_OP_DESC;
 }
 
@@ -187,14 +190,15 @@ void State_NetxError(NETX_APP_RSC_T *ptNetxRsc)
     ptNetxRsc->bInitErrCounter < 64)
   {
     ptNetxRsc->fNetXDrvRunning = false;
-    snprintf(ptNetxRsc->tLcdCommand.pcMessage, sizeof(ptNetxRsc->tLcdCommand.pcMessage), "%s", "Err\n");
-    NetX_FSMTransition(ptNetxRsc, &NETX_STATE_PREOP_DESC);
+    AppManager_SendCommand(APP_CMD_NETX_INIT_ERR);
+    prvFSMTransition(ptNetxRsc, &NETX_STATE_PREOP_DESC);
   }
   else
   {
-    NetX_FSMTransition(ptNetxRsc, &NETX_STATE_ERROR_DESC);
+    AppManager_SendCommand(APP_CMD_NETX_GENERAL_ERR);
+    prvFSMTransition(ptNetxRsc, &NETX_STATE_ERROR_DESC);
     /* Manually update peripherals */
-    AppManager_UpdatePeripherals(ptNetxRsc);
+    //AppManager_UpdatePeripherals(ptNetxRsc);
     vTaskSuspend(ptNetxRsc->xMailboxTaskHandle);
   }
   ptNetxRsc->previousState = &NETX_STATE_ERROR_DESC;
@@ -242,7 +246,7 @@ void NetxWorker(void *pvParameters)
   configASSERT(pdPASS == xReturned);
   vTaskSuspend(tNetxFSM.xMailboxTaskHandle);
 
-  NetX_OnEnterState(&tNetxFSM, NETX_STATE_INIT);
+//  prvOnEnterState(&tNetxFSM, NETX_STATE_INIT);
   xTimerStart(tNetxFSM.hCyclicTimer, 0);
 
   while (1)

@@ -11,7 +11,6 @@
 #include <stdbool.h>
 #include "led_func.h"
 #include "FreeRTOS.h"
-#include "queue.h"
 
 typedef enum {
   LED_CMD_CONFIGURING,  /* yellow and green LED alternate flashing */
@@ -23,6 +22,6 @@ typedef enum {
 } LED_COMMAND_E;
 
 void LED_Worker(void* pvParameters);
-bool LED_SendCommand(const void *ptLedCmd);
+bool LED_SendCommand(const void *ptLedCmd, TickType_t xTicksToWait);
 
 #endif /* WORKERS_INC_LED_WORKER_H_ */

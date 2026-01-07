@@ -26,7 +26,11 @@ struct FreeRTOS_THREAD_Ttag
 typedef struct APP_MANANGER_RSC_Ttag
 {
   QUEUE_CONFIG_T    ptTaskQueueConfig[QUEUE_ID_COUNT];
+  QueueHandle_t     xMsgQueue;
   NETX_APP_RSC_T    *ptNetxRsc;
+  APP_COMMAND_E     eCurrentCmd;
+  LED_COMMAND_E     tLedCmd;
+  LCD_COMMAND_T     tLcdCommand;
   bool              fInitialized;
 } APP_MANANGER_RSC_T;
 

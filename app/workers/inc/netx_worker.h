@@ -156,9 +156,6 @@ typedef struct NETX_APP_RSC_Ttag
   const NetxStateDescriptor_t     *currentState;
   const NetxStateDescriptor_t     *previousState;
 
-  LED_COMMAND_E                   tLedCmd;
-  LCD_COMMAND_T                   tLcdCommand;
-
   TaskHandle_t                    xMailboxTaskHandle;
   TaskHandle_t                    xNetxWorkerTaskHandle;
   TimerHandle_t                   hCyclicTimer;

@@ -15,7 +15,7 @@
 static SemaphoreHandle_t s_xTaskMsgMutex = NULL;
 static QUEUE_CONFIG_T *s_ptQueueTable = NULL;
 /**
- * @brief Interne Funktion: Validiert Queue-ID
+ * @brief Validate Queue-ID
  */
 static bool prvIsValidQueueId(MSG_QUEUE_ID_E eId)
 {
@@ -24,7 +24,7 @@ static bool prvIsValidQueueId(MSG_QUEUE_ID_E eId)
 
 /* Private functions */
 /**
- * @brief Interne Funktion: Holt Queue-Handle mit Prüfung
+ * @brief Retrieves queue handle with check
  */
 static QueueHandle_t prvGetQueueHandle(MSG_QUEUE_ID_E eId)
 {
@@ -32,17 +32,10 @@ static QueueHandle_t prvGetQueueHandle(MSG_QUEUE_ID_E eId)
   {
     return NULL;
   }
-
-  QueueHandle_t hQueue = s_ptQueueTable[eId].xtQueueHandle;
-  if(NULL != hQueue)
-  {
-    UBaseType_t uxLength = uxQueueMessagesWaiting(hQueue);
-    (void) uxLength;
-  }
-
-  return hQueue;
+  return s_ptQueueTable[eId].xtQueueHandle;
 }
 
+/* Public functions */
 BaseType_t TaskMsg_Init(QUEUE_CONFIG_T *ptQueueConfig)
 {
   s_xTaskMsgMutex = xSemaphoreCreateMutex();
@@ -104,7 +97,7 @@ BaseType_t TaskMsg_SendTo(MSG_QUEUE_ID_E eReceiverId, const void *pvData, TickTy
   QueueHandle_t hQueue = prvGetQueueHandle(eReceiverId);
   if (NULL != hQueue)
   {
-    xResult = s_ptQueueTable[eReceiverId].pfnCmdCallback(pvData);
+    xResult = s_ptQueueTable[eReceiverId].pfnCmdCallback(pvData, xTicksToWait);
   }
 
   xSemaphoreGive(s_xTaskMsgMutex);
