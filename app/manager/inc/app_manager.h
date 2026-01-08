@@ -26,8 +26,6 @@ struct FreeRTOS_THREAD_Ttag
 typedef struct APP_MANANGER_RSC_Ttag
 {
   QUEUE_CONFIG_T    ptTaskQueueConfig[QUEUE_ID_COUNT];
-  QueueHandle_t     xMsgQueue;
-  NETX_APP_RSC_T    *ptNetxRsc;
   APP_COMMAND_E     eCurrentCmd;
   LED_COMMAND_E     tLedCmd;
   LCD_COMMAND_T     tLcdCommand;
@@ -36,7 +34,5 @@ typedef struct APP_MANANGER_RSC_Ttag
 
 void AppManager_Init();
 void AppManager_Run();
-void AppManager_UpdatePeripherals(NETX_APP_RSC_T* ptNetxRsc);
-void AppManager_UpdateNeopixelDataFromPLC(NETX_APP_RSC_T* ptNetxRsc);
-void AppManager_CallRedFlashingMode(NETX_APP_RSC_T* ptNetxRsc);
+
 #endif /* MANAGER_INC_APP_MANAGER_H_ */

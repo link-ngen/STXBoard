@@ -171,5 +171,6 @@ uint32_t Netx_ReadNetworkState(NETX_APP_RSC_T *ptNetxRsc);
 
 /* netx worker */
 void NetxWorker(void *pvParameters);
+bool NetX_SendSensorUpdate(const void *pvtData, TickType_t xTicksToWait);
 
 #endif /* WORKERS_INC_NETX_WORKER_H_ */

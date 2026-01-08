@@ -11,6 +11,7 @@
 #define MSG_LED_QUEUE_LEN     1
 #define MSG_LCD_QUEUE_LEN     1
 #define MSG_NEOPXL_QUEUE_LEN  1
+#define MSG_NETX_QUEUE_LEN    1
 #define MSG_APP_MAN_QUEUE_LEN 5
 
 /**
@@ -24,6 +25,7 @@ typedef enum
   QUEUE_ID_LED_WORKER,           ///< LED control
   QUEUE_ID_LCD_WORKER,           ///< LCD display
   QUEUE_ID_NEOPIXEL_WORKER,      ///< Neopixel/LED strip control
+  QUEUE_ID_NETX_WORKER,          ///< Netx control
   QUEUE_ID_COUNT,                ///< Total number of queues (MUST be last element!)
 } MSG_QUEUE_ID_E;
 
@@ -42,14 +44,14 @@ typedef enum
   APP_CMD_COUNT
 } APP_COMMAND_E;
 
-//typedef struct
-//{
-//  APP_COMMAND_E eCommand;
-//  void *pvData;
-//} APP_MESSAGE_T;
+typedef struct
+{
+  APP_COMMAND_E eCommand;
+  void *pvData;
+} APP_MESSAGE_T;
 
 /* Debug function enable */
 // #define DBG_ENABLE_LOGGING
-void AppManager_SendCommand(APP_COMMAND_E eMessage);
+void AppManager_SendCommand(APP_MESSAGE_T *ptMessage);
 
 #endif /* MANAGER_INC_APP_DEFINES_H_ */

@@ -33,7 +33,6 @@ typedef struct NEOPXL_DATA_ITEM_Ttag
   NEOPXL_RGB_T tColor;              /* 3 Byte */
 } NEOPXL_DATA_ITEM_T;
 
-
 /* ================= PUBLIC API ================= */
 void Neopxl_Worker(void *pvParameters); /* params queue and command */
 bool Neopxl_UpdateData(const void *ptNeopxlData, TickType_t xTicksToWait);

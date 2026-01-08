@@ -7,11 +7,16 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #include "lcd_worker.h"
-#include "app_manager.h"
+#include "app_defines.h"
 #include "ssd1306.h"
 #include "ssd1306_gfx.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 //#include "OS_Dependent.h"
 
 //#include "cat_frames.h"
